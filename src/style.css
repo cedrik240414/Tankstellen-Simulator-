@@ -37,3 +37,6 @@ input{-webkit-user-select:text;user-select:text;font-size:16px}
 @media (orientation:portrait){#fp{aspect-ratio:auto;height:72vh;max-height:none}}
 /* Querformat auf dem iPad: möglichst viel 3D-Bild */
 @media (orientation:landscape) and (max-height:900px){#app{max-width:none;padding:6px}#fp{max-height:none;height:calc(100vh - 150px);aspect-ratio:auto}}
+/* kein Doppeltipp-Zoom auf iPad/iPhone */
+*{touch-action:manipulation}
+#fp,#fp *,#sc{touch-action:none}
