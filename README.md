@@ -18,7 +18,7 @@ Nach dem ersten Deploy: `https://cedrik240414.github.io/Tankstellen-Simulator-/`
 ## GitHub Pages einrichten (einmalig)
 
 1. Auf GitHub: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**.
-2. Auf den Standard-Branch pushen (oder den Workflow „Tests und GitHub Pages“ unter *Actions* von Hand starten).
+2. Auf `main` pushen (oder den Workflow „Tests und GitHub Pages“ unter *Actions* von Hand starten).
 3. Der Workflow testet, baut und veröffentlicht `dist/index.html`.
 
 ## Entwickeln
