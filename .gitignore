@@ -4,3 +4,4 @@ screenshots/
 dist-online/
 worker/.wrangler/
 worker/deploy.log
+dist-offline/

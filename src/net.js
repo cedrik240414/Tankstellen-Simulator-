@@ -1,7 +1,10 @@
 // Verbindung zum Spiel-Server. Ohne Server (VITE_API_URL leer) läuft dieselbe Logik lokal.
 import { handle } from './shared/core.js';
 
-const API = (import.meta.env && import.meta.env.VITE_API_URL) || '';
+// Server-Adresse; mit VITE_API_URL=offline baut man eine reine Offline-Version (für lokale Tests)
+const DEFAULT_API = 'https://nachtschicht-server.cedrikve.workers.dev';
+const ENV_API = (import.meta.env && import.meta.env.VITE_API_URL) || '';
+const API = ENV_API === 'offline' ? '' : ENV_API || DEFAULT_API;
 export const online = !!API;
 
 const localDb = {

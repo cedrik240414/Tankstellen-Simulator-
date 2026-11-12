@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "VITE_API_URL=offline vite build --outDir dist-offline && node scripts/smoke.mjs dist-offline/index.html"
   },
   "dependencies": {
     "three": "^0.128.0"
