@@ -43,6 +43,10 @@ jobs:
           IN_TOKEN=$(jq -r '.inputs.cf_token // empty' "$GITHUB_EVENT_PATH")
           if [ -n "$IN_TOKEN" ]; then echo "::add-mask::$IN_TOKEN"; export CLOUDFLARE_API_TOKEN="$IN_TOKEN"; fi
           if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then export CLOUDFLARE_ACCOUNT_ID=3440183c56ca9fbf69d17d9f7dcc3e27; fi
+          # Leerzeichen, Zeilenumbrüche und Anführungszeichen entfernen (passiert leicht beim Einfügen am iPad)
+          export CLOUDFLARE_API_TOKEN=$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d "[:space:]\"'")
+          export CLOUDFLARE_ACCOUNT_ID=$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d "[:space:]\"'")
+          echo "Token-Länge: ${#CLOUDFLARE_API_TOKEN}, beginnt mit: ${CLOUDFLARE_API_TOKEN:0:5}" 
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::notice::Kein CLOUDFLARE_API_TOKEN gesetzt – das Spiel läuft im Offline-Modus."
             exit 0
