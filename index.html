@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<title>Nachtschicht – Tankstelle</title>
+<title>Ganz normaler Tankstellen Simulator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -10,14 +10,12 @@
 <meta name="theme-color" content="#07090b">
 </head>
 <body>
-<div id="app"><div id="hud"></div>
-<div id="fp" class="hide"><canvas id="cv"></canvas><div id="jb"><div id="jk"></div></div><div id="xh">+</div><div id="ib"></div><button id="mb" data-a="mon">🖥️ Monitor</button><button id="fb" data-a="zap">🔫</button></div><div id="main"><svg id="map" viewBox="0 0 200 190">
-<g data-a="go" data-v="lager"><path d="M30 8H130L138 50H22Z"/><text x="80" y="34">Lagerraum</text></g>
-<g data-a="go" data-v="laden"><rect x="18" y="58" width="124" height="92"/><rect class="sh" x="36" y="74" width="8" height="26"/><rect class="sh" x="66" y="74" width="8" height="26"/><rect class="sh" x="96" y="74" width="8" height="26"/><path d="M122 120h-14v22h6v-16h8z"/><text x="70" y="136">Laden</text></g>
-<rect x="110" y="160" width="60" height="22" style="fill:#2a343d"/><text x="140" y="175">Bus</text>
-<circle id="me" cx="80" cy="100" r="6" fill="#b8322a"/></svg>
-<section id="view"></section></div><div id="log"></div></div>
-<div id='js' style='display:none;position:fixed;inset:0;background:#000;color:#c00;font-size:40vmin;align-items:center;justify-content:center;z-index:99'></div><div id='qt' class='hide'></div><div id="ov"><div><p style='letter-spacing:3px;color:#9aa5af'>SVE STUDIOS</p><h2>⛽ Nachtschicht</h2><p>00:00–06:00, eine Spielstunde = eine Minute. Prüfe jeden Ausweis: Name, Unterschrift, Alter, Status. Erschieße Anomalien, aber niemals Menschen. Wisch das Blut weg. Links wischen: laufen, rechts wischen: umschauen. Am Monitor suchst du Namen im Register und vergleichst mit dem Ausweis. Und nimm um 6 Uhr den Bus.</p><div class='btns' style='justify-content:center'><input id='un' placeholder='Name' autocomplete='off' maxlength='16'><input id='pw' type='password' placeholder='Passwort' maxlength='24'></div><p id='lm' class='red'></p><button class="big red" data-a="start" data-v="tank">⛽ Tankstelle</button><button class="big" data-a="start" data-v="pizza" style='margin-top:8px'>🍕 Benni Fazbear's <span id=pzlock></span></button></div></div>
+<div id="title" class="hide"></div>
+<div id="menu" class="hide"><div id="mhead"></div><div id="mtabs" class="btns"></div><div class="mwrap"><div id="mcontent"></div><canvas id="prev"></canvas></div></div>
+<div id="app" class="hide"><div id="hud"></div>
+<div id="fp" class="hide"><canvas id="cv"></canvas><div id="jb"><div id="jk"></div></div><div id="xh">+</div><div id="ib"></div><button id="mb" data-a="mon">🖥️ Monitor</button><button id="fb" data-a="zap">🔫</button><div id="cap"></div><div id="evt"></div><div id="task"></div><div id="flash"></div></div>
+<div id="main"><section id="view"></section></div><div id="log"></div></div>
+<div id="js"></div><div id="qt" class="hide"></div><div id="ov" class="hide"></div>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

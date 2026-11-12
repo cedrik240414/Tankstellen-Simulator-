@@ -1,12 +1,14 @@
 // Spielablauf, Oberfläche (HTML-Overlays) und Eingaben. Die 3D-Szene steht in scene.js.
 import { S, setState, V, K, $, pick, rnd, W, dst } from './state.js';
 import {
-  SH, FU, ITEM_PRICE, WHISPERS, SKULL_SPOTS, UPGRADE_COST, WEAPONS, WORLDS, W_IDX, START_STOCK, RESTOCK_AMOUNT,
+  SH, FU, ITEM_PRICE, WHISPERS, SKULL_SPOTS, upgradeCost, weaponLevelCost, WEAPONS, WORLDS, W_IDX, START_STOCK, RESTOCK_AMOUNT,
   ORDER_PRICE, ORDER_DELAY, INVENTORY_SLOTS, GATE_PRICE, POWER_PRICE, MAX_MISTAKES, MAX_COMPLAINTS, SKULLS_TOTAL,
   HEADS_TOTAL, SECRET_MONEY, SHIFT_END, TICK_SECONDS,
 } from './config.js';
 import * as L from './logic.js';
 import { createStore } from './storage.js';
+import { call, online } from './net.js';
+import { SC } from './state.js';
 
 export const store = createStore();
 
@@ -25,7 +27,8 @@ export function init() {
     t: 0, m: 20, sc: 0, bw: 0, loc: 'laden', inv: [], st: { ...START_STOCK }, bl: [], wp: 0, c: null, cid: 0,
     px: 60, py: 62, nk: '', rr: '', q: '', nt: 30, th: null, gate: 0, ah: 0, hgot: 0, map: 'tank', skg: 0,
     skp: pick(SKULL_SPOTS), own: [0], wi: 0, up: { mm: 0, dm: 0, hp: 0 }, sk: 0, mt: 0, nc: 4, ord: [], cr: [], fu: [],
-    wl: 1, it: { wood: 0, trap: 0, bomb: 0, elek: 0 }, boss: null, ph: 'start', mon: false, hp: 3, lf: 0, flags: {},
+    wl: 1, it: { wood: 0, trap: 0, bomb: 0, elek: 0 }, boss: null, ph: 'menu', mon: false, hp: 3, lf: 0, flags: {},
+    skin: 'standard', skins: ['standard'], ranks: [], rank: '', evDone: [], tie: null, role: 'player', others: [],
   });
   R();
 }
@@ -68,8 +71,8 @@ function monitorShop() {
     });
   } else {
     [['mm', '💶 Geld-Multiplikator'], ['dm', '💥 Schadens-Multiplikator'], ['hp', '❤️ Max-Leben']].forEach(([k, n]) => {
-      const c = UPGRADE_COST[k], l = S.up[k];
-      h += `<button data-a=upg2 data-v=${k} ${l >= c.length ? 'disabled' : ''}>${n} ${l}/${c.length} ${l < c.length ? c[l] + '€' : 'MAX'}</button>`;
+      const l = S.up[k];
+      h += `<button data-a=upg2 data-v=${k}>${n} Stufe ${l} → ${l + 1} (${upgradeCost(k, l)}€)</button>`;
     });
   }
   return h + '</div>';
@@ -119,7 +122,7 @@ export function ib() {
     if (S.cr.length) S.cr.forEach((k, i) => { h += `<button class=hl data-a=take data-v=${i}>📦 ${SH[k][0]} nehmen</button>`; });
     else h += '<p class=mu>Lager: Keine Lieferung da. Unterwegs: ' + S.ord.length + '</p>';
   }
-  if (n.includes('u')) h += `<button data-a=upg>🔫 Waffe Lv${S.wl} ${S.wl < 3 ? '→ Lv' + (S.wl + 1) + ' (' + S.wl * 60 + '€)' : '(MAX)'}</button>`;
+  if (n.includes('u')) h += `<button data-a=upg>🔫 Waffe Lv${S.wl} → Lv${S.wl + 1} (${weaponLevelCost(S.wl)}€)</button>`;
   if (n.includes('k')) h += '<button data-a=skull>💀 Schädel nehmen</button>';
   if (S.gd) h += '<button data-a=gback>🧱 Zurück in die Backrooms</button>';
   if (n.includes('w') && !S.own.includes(W_IDX.garden)) h += '<button class=hl data-a=fweap>🔫 Gratis-Waffe nehmen</button>';
@@ -154,19 +157,21 @@ function idsay(c) {
 export function R() {
   if (!S) return;
   const hpPct = Math.max(0, (S.hp / hpMax()) * 100);
-  $('#hud').innerHTML = `<span id="clk"></span><span>👤 ${S.name || '?'}${S.adm ? ' 👑' : ''}</span>`
+  $('#hud').innerHTML = `<button data-a=menu>🏠 Menü</button><span id="clk"></span><span>👤 ${S.name || '?'}${S.adm ? ' 👑' : ''}${S.lobby ? ' · 👥 ' + S.lobby + ' (' + (S.others.length + 1) + ')' : ''}</span>`
     + (S.adm ? '<button data-a=gm data-v=100>+100€</button><button data-a=gm data-v=1000>+1000€</button><button data-a=gh data-v=s>💀+1</button><button data-a=gh data-v=a>🐶+1</button>' : '')
     + `<span>💶 ${S.m}€</span><span class=hb><i style='width:${hpPct}%'></i></span>`
     + `<span>${S.map == 'pizza' ? '🐶 ' + S.ah + '/' + HEADS_TOTAL : '💀 ' + (S.sk || 0) + '/' + SKULLS_TOTAL}</span><span>☠️ ${S.sc}/${MAX_MISTAKES}</span><span>😠 ${S.bw}/${MAX_COMPLAINTS}</span><span>🎒 ${[0, 1].map(i => (S.inv[i] ? '📦' : '▫️')).join('')}</span>`;
   const playing = S.ph == 'play' || S.ph == 'bus';
-  $('#fp').className = playing && (!S.mon || S.cam) ? (S.mon ? 'cc' : '') : 'hide';
+  $('#fp').className = S.ph == 'event' ? 'cut' : playing && (!S.mon || S.cam) ? (S.cam ? 'cc' : '') : 'hide';
+  $('#app').classList.toggle('hide', S.ph == 'menu');
   if (document.activeElement && document.activeElement.id == 'nm') return;
-  const view = S.mon ? monitor() : bossWarning();
+  const view = S.ph == 'event' ? '' : S.mon ? monitor() : S.cam ? camControls() : bossWarning();
   $('#view').innerHTML = view;
   $('#view').style.display = view ? '' : 'none';
   $('#ib').innerHTML = playing && !S.mon ? ib() : '';
   clk();
 }
+const camControls = () => '<div class=btns>' + (CAM_NAMES[S.map] || CAM_NAMES.tank).map((n, i) => `<button class='${S.cam == i + 1 ? 'hl' : ''}' data-a=cam data-v=${i + 1}>📹 ${n}</button>`).join('') + '<button class=red data-a=cam data-v=0>❌ Kamera aus</button></div>';
 const bossWarning = () => (S.boss && !S.boss.f ? '<p class=red>⚠️ Es kommt gleich! Ab ins Lager, Holz und Fallen am Monitor kaufen.</p>' : '');
 function clk() { const e = $('#clk'); if (e) e.textContent = '🕛 ' + L.clock(S.t, S.map); }
 
@@ -208,18 +213,11 @@ function qtl(t) {
 }
 
 // ---------------------------------------------------------------- Pizzeria
-const dogSVG = (k, s) => `<svg width=${s} height=${s} viewBox='0 0 100 100'>` + (k
-  ? `<ellipse cx=18 cy=42 rx=11 ry=24 fill=#2b2b30 /><ellipse cx=82 cy=42 rx=11 ry=24 fill=#2b2b30 /><circle cx=50 cy=54 r=32 fill=#6b6b72 /><ellipse cx=50 cy=70 rx=19 ry=14 fill=#d8d8dc />`
-  : `<ellipse cx=16 cy=50 rx=13 ry=28 fill=#7a431d /><ellipse cx=84 cy=50 rx=13 ry=28 fill=#7a431d /><circle cx=50 cy=52 r=36 fill=#b8692c /><circle cx=34 cy=30 r=11 fill=#c97a3a /><circle cx=66 cy=30 r=11 fill=#c97a3a />`)
-  + `<circle cx=37 cy=50 r=6 fill=#fff600 /><circle cx=63 cy=50 r=6 fill=#fff600 /><circle cx=37 cy=50 r=2.5 fill=#000 /><circle cx=63 cy=50 r=2.5 fill=#000 /><ellipse cx=50 cy=66 rx=8 ry=6 fill=#111 /><path d='M28 22 Q50 -6 74 22 L68 28 Q50 14 34 28Z' fill=#c0392b /><circle cx=76 cy=16 r=6 fill=#fff /></svg>`;
-const ROOMS = ['Bühne', 'Halle', 'Gang', 'Tür'];
-const hall = o => [0, 1, 2, 3].filter(i => o == null || o == i).map(i => `<div class=sl><small>${ROOMS[i]}</small>${S.pz.a.filter(a => a.pos == i).map(a => dogSVG(a.k, 44 + i * 22) + (i == 3 ? '<small>' + (a.s ? 'rechts' : 'links') + '</small>' : '')).join('')}</div>`).join('');
 function pizzaPanel() {
   const p = S.pz, c = S.c;
   let h = `<p>🔋 Strom: <b id=pw>${Math.ceil(p.pw)}%</b> <button data-a=pbuy>+25% (${POWER_PRICE}€)</button></p><div class=btns>`
     + [0, 1].map(i => `<button class='${p.d[i] ? 'hl' : ''}' data-a=pdoor data-v=${i}>🚪 ${i ? 'Rechts' : 'Links'}: ${p.d[i] ? 'zu' : 'offen'}</button>`).join('')
     + `<button data-a=pcam>📹 Kameras</button><button data-a=pout>🚪 Ausgang</button></div>`;
-  if (S.pzv == 'c') h += '<div class=btns>' + [0, 1, 2, 3].map(i => `<button data-a=pc data-v=${i}>📹 ${ROOMS[i]}</button>`).join('') + '</div><div class=wv>' + hall(S.pcam || 0) + '</div>';
   if (c) h += '<div data-a=idc>' + card(c) + '</div>' + (S.ds ? `<p class=lk>„${S.ds}“</p>` : '') + `<p>„${c.say}“</p>` + counterButtons;
   else h += '<p class=mu>Am Verkaufsfenster ist niemand.</p>';
   return h;
@@ -273,7 +271,8 @@ export function over(t, m) {
   if (S.ph == 'over') return;
   if (t.includes('Geschafft')) m += shiftDone();
   S.ph = 'over'; saveP(); S.mg = null;
-  $('#ov').innerHTML = `<div><h2>${t}</h2><p>${m}</p><button class="big red" data-a="restart">Nochmal</button></div>`;
+  $('#ov').innerHTML = `<div><h2>${t}</h2><p>${m}</p><button class="big red" data-a="restart">Nochmal</button><button class="big" data-a="menu" style="margin-top:8px">🏠 Hauptmenü</button></div>`;
+  if (hooks.sync) hooks.sync();
   $('#ov').className = '';
 }
 function chk() {
@@ -320,34 +319,75 @@ function mgl(t) {
 
 const goToWorldStart = () => { S.px = 60; S.py = 62; V.yaw = 1.4; V.pit = 0; };
 
+// ---------------------------------------------------------------- Menü-Anbindung
+export const hooks = {}; // vom Menü gesetzt: showMenu, sync
+/** neue Schicht, Fortschritt bleibt */
+function resetShift() {
+  const keep = { name: S.name, role: S.role, adm: S.adm };
+  saveP(); init(); Object.assign(S, keep); loadP(); S.hp = hpMax();
+}
+function goMenu(m) {
+  if (S.ph == 'play' || S.ph == 'bus') saveP();
+  if (S.qt) S.qt.on = 0;
+  $('#qt').className = 'hide'; $('#ov').className = 'hide';
+  S.ph = 'menu'; S.mon = false; S.cam = 0; S.c = null; S.th = null; S.boss = null; S.mg = null;
+  R();
+  if (hooks.sync) hooks.sync();
+  if (hooks.showMenu) hooks.showMenu(m);
+}
+export const G = {
+  store, say, hooks,
+  save: () => saveP(),
+  reload: () => loadP(),
+  busy: () => S && S.ph == 'event',
+  async newSession(name, role) { init(); S.name = name; S.role = role; S.adm = role == 'admin'; loadP(); S.hp = hpMax(); S.ph = 'menu'; R(); },
+  logout() { if (S && S.name) saveP(); init(); },
+  startGame(world, lobbyCode) {
+    resetShift();
+    S.lobby = lobbyCode || null;
+    if (world == 'pizza') { S.map = 'pizza'; initPz(); } else { S.map = world || 'tank'; if (S.map != 'tank') goToWorldStart(); else { S.px = 60; S.py = 62; V.yaw = 0; V.pit = 0; } }
+    S.ph = 'play';
+    document.querySelector('#menu').classList.add('hide');
+    R();
+    say('Willkommen, ' + S.name + '. Die Nachtschicht beginnt.' + (S.lobby ? ' Lobby ' + S.lobby + ': Deine Freunde sind mit dir in der Welt.' : ''));
+  },
+  /** Live-Event abspielen (Cutscene), danach done() */
+  playEvent(type, done) {
+    if (S.ph == 'play' || S.ph == 'bus') saveP();
+    document.querySelector('#menu').classList.add('hide');
+    $('#ov').className = 'hide'; $('#qt').className = 'hide';
+    S.ph = 'event'; S.map = 'tank'; S.c = null; S.th = null; S.boss = null; S.mon = false; S.cam = 0;
+    R();
+    SC.ev.start(type, () => { S.ph = 'menu'; R(); done(); });
+  },
+};
+
+// ---------------------------------------------------------------- Lobby: Positionen austauschen
+let lobbyBusy = false;
+setInterval(async () => {
+  if (!S || !S.lobby || !online || lobbyBusy || (S.ph != 'play' && S.ph != 'bus')) { if (S && !S.lobby) S.others = []; return; }
+  lobbyBusy = true;
+  const [x, z] = W(S.px, S.py);
+  const r = await call('lobby_sync', { code: S.lobby, me: { x, z, yaw: V.yaw, world: S.map, skin: S.skin, tie: S.tie == null ? '' : String(S.tie), rank: S.rank } });
+  lobbyBusy = false;
+  if (r.ok) { const n = S.others.length; S.others = r.players.filter(p => p.world == S.map); if (n != S.others.length) R(); }
+  else if (r.error && /nicht gefunden/.test(r.error)) { S.lobby = null; S.others = []; say('Die Lobby gibt es nicht mehr.'); R(); }
+}, 300);
+
 // ---------------------------------------------------------------- Aktionen (alle Knöpfe)
 export function act(a, v) {
   const c = S.c, B = S.boss, pl = S.ph == 'play';
   switch (a) {
-    case 'start': {
-      const n = $('#un').value.trim(), res = store.login(n, $('#pw').value);
-      if (!res.ok) { $('#lm').textContent = res.msg; return; }
-      const total = store.shifts(n);
-      if (v == 'pizza' && !L.worldUnlocked('pizza', total, res.admin)) { $('#lm').textContent = `Benni Fazbear's ab Schicht ${L.unlockShifts('pizza')} (${total}/${L.unlockShifts('pizza')}).`; return; }
-      S.name = n; S.adm = res.admin; loadP(); S.hp = hpMax();
-      S.map = v == 'pizza' ? 'pizza' : 'tank';
-      if (S.map == 'pizza') initPz();
-      const gift = store.takeGift(n), bonus = store.takeBonus(n);
-      S.m += gift + bonus;
-      S.ph = 'play'; $('#ov').className = 'hide';
-      say('Willkommen, ' + n + (S.adm ? ' (Admin)' : '') + '. Die Nachtschicht beginnt.' + (bonus ? ' Bonus: +' + bonus + '€' : '') + (gift ? ' Geschenk: +' + gift + '€' : ''));
-      break;
-    }
     case 'restart': {
-      const nm = S.name, ad = S.adm, mp = S.map;
-      init(); S.name = nm; S.adm = ad; S.map = mp; loadP(); S.hp = hpMax();
-      if (mp == 'pizza') initPz(); else if (mp != 'tank') goToWorldStart();
-      S.ph = 'play'; $('#ov').className = 'hide';
-      break;
+      const mp = S.map;
+      $('#ov').className = 'hide';
+      G.startGame(mp, S.lobby);
+      return;
     }
+    case 'menu': goMenu(); return;
     case 'gate': if (S.m < GATE_PRICE) { say('Zu wenig Geld.'); return; } S.m -= GATE_PRICE; S.gate = 1; say('Gerät am Eingang installiert. Es piept bei Diebstahl.'); break;
     case 'idc': if (!c || !c.arr || V.drg > 10) return; S.ds = idsay(c); break;
-    case 'zap': { if (!pl) return; const n = performance.now(); if (n - S.lf < 900 - 100 * S.wl) return; S.lf = n; V.fl = 9; window.FIRE2(); return; }
+    case 'zap': { if (!pl) return; const n = performance.now(); if (n - S.lf < Math.max(250, 900 - 100 * S.wl)) return; S.lf = n; V.fl = 9; window.FIRE2(); return; }
     case 'tab': S.mt = +v; break;
     case 'bw': {
       const r = L.canBuyWeapon(+v, S.own, S.m);
@@ -357,9 +397,9 @@ export function act(a, v) {
     }
     case 'eq': if (!S.own.includes(+v)) return; S.wi = +v; say(WEAPONS[v].name + ' ausgerüstet.'); break;
     case 'upg2': {
-      const cost = UPGRADE_COST[v], l = S.up[v];
-      if (l >= cost.length || S.m < cost[l]) { say('Nicht möglich oder zu wenig Geld.'); return; }
-      S.m -= cost[l]; S.up[v]++; if (v == 'hp') S.hp = hpMax(); say('Upgrade gekauft!');
+      const cost = upgradeCost(v, S.up[v]);
+      if (S.m < cost) { say('Zu wenig Geld.'); return; }
+      S.m -= cost; S.up[v]++; if (v == 'hp') S.hp = hpMax(); say('Upgrade gekauft!');
       break;
     }
     case 'skull': if (S.skg) return; S.skg = 1; S.sk = Math.min(SKULLS_TOTAL, S.sk + 1); say('💀 Schädel ' + S.sk + '/' + SKULLS_TOTAL + ' gefunden!'); break;
@@ -384,8 +424,7 @@ export function act(a, v) {
     }
     case 'pdoor': if (S.pz.pw <= 0) { say('Kein Strom!'); return; } S.pz.d[+v] ^= 1; break;
     case 'pbuy': if (S.m < POWER_PRICE) { say('Zu wenig Geld.'); return; } S.m -= POWER_PRICE; S.pz.pw = Math.min(100, S.pz.pw + 25); break;
-    case 'pcam': S.pzv = S.pzv == 'c' ? 0 : 'c'; S.pcam = S.pcam || 0; break;
-    case 'pc': S.pcam = +v; break;
+    case 'pcam': S.cam = 1; S.mon = false; break;
     case 'pout': S.out = 1; S.px = 25; S.py = -36; V.yaw = 0; say('Du gehst durch den Mitarbeiterausgang. Der Strom läuft weiter!'); break;
     case 'pin': S.out = 0; [S.px, S.py] = PIZZA_OFFICE; V.yaw = 0; break;
     case 'head': if (S.hgot) return; S.hgot = 1; S.ah = Math.min(HEADS_TOTAL, S.ah + 1); say('🐶 Animatronic-Kopf ' + S.ah + '/' + HEADS_TOTAL + ' gefunden!'); break;
@@ -445,11 +484,11 @@ export function act(a, v) {
       break;
     }
     case 'take': if (S.inv.length >= INVENTORY_SLOTS) { say('Nur ' + INVENTORY_SLOTS + ' Items im Inventar!'); return; } S.inv.push(S.cr.splice(+v, 1)[0]); break;
-    case 'upg': { const p = S.wl * 60; if (S.wl >= 3 || S.m < p) { say(S.wl >= 3 ? 'Maximal.' : 'Zu wenig Geld.'); return; } S.m -= p; S.wl++; say('Waffe verbessert.'); break; }
+    case 'upg': { const p = weaponLevelCost(S.wl); if (S.m < p) { say('Zu wenig Geld.'); return; } S.m -= p; S.wl++; say('Waffe verbessert: Lv' + S.wl); break; }
     case 'buy': if (S.m < ITEM_PRICE[v]) { say('Zu wenig Geld.'); return; } S.m -= ITEM_PRICE[v]; S.it[v]++; break;
     case 'ord': if (S.m < ORDER_PRICE) { say('Zu wenig Geld.'); return; } S.m -= ORDER_PRICE; S.ord.push({ k: v, t: S.t + ORDER_DELAY }); say('Bestellt. Lieferung in 2 Minuten im Lager.'); break;
     case 'fur': if (S.fu.includes(+v)) return; if (S.m < FU[v][2]) { say('Zu wenig Geld.'); return; } S.m -= FU[v][2]; S.fu.push(+v); say('Gemütlicher.'); break;
-    case 'fire': { if (!B) return; const n = performance.now(); if (n - S.lf < 900 - 100 * S.wl) return; S.lf = n; V.fl = 9; window.FIRE2(); break; }
+    case 'fire': { if (!B) return; const n = performance.now(); if (n - S.lf < Math.max(250, 900 - 100 * S.wl)) return; S.lf = n; V.fl = 9; window.FIRE2(); break; }
     case 'plank': if (B && S.it.wood > 0 && B.pl < 5) { S.it.wood--; B.pl++; } break;
     case 'trap': if (B && S.it.trap > 0) { S.it.trap--; B.trp.push(W(S.px, S.py)); say('Falle gelegt.'); } break;
     case 'bomb': if (B && S.it.bomb > 0) { S.it.bomb--; hit(40); } break;

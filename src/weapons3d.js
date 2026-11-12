@@ -119,6 +119,26 @@ export function weaponModel(THREE, i) {
         box(0.015, 0.05, 0.015, 0, 0.11, -0.25, mat(0x2e7a2e));
         box(0.03, 0.02, 0.01, -0.03, 0.04, -0.335, mat(0xffe060, 0, true)); box(0.03, 0.02, 0.01, 0.03, 0.04, -0.335, mat(0xffe060, 0, true));
         muzzle = -0.35; break;
+      case W_IDX.evBlade: // Dark Blade: Energieschwert
+        box(0.03, 0.04, 0.12, 0, -0.01, 0.03, grip);
+        box(0.09, 0.015, 0.03, 0, -0.01, -0.035, mat(0x5a2a8a));
+        box(0.014, 0.05, 0.42, 0, 0.0, -0.26, mat(0xb050ff, 0, true));
+        box(0.03, 0.07, 0.44, 0, 0.0, -0.26, mat(0x7a20ff, 0, true)).material.transparent = true;
+        muzzle = -0.48; break;
+      case W_IDX.evBlaster: // Light Blaster
+        box(0.05, 0.1, 0.06, 0, -0.05, 0.03, mat(0xf4f4f4), 0.25);
+        box(0.07, 0.07, 0.24, 0, 0.03, -0.08, mat(0xf4f4f4));
+        ball(0.04, 0, 0.03, -0.22, mat(0xfff8a0, 0, true));
+        add(new THREE.TorusGeometry(0.045, 0.008, 6, 16), mat(0xffe060, 0, true), 0, 0.03, -0.18); muzzle = -0.26; break;
+      case W_IDX.evRifle: // Shadow Rifle
+        box(0.05, 0.06, 0.18, 0, 0, 0.15, mat(0x111114));
+        box(0.06, 0.08, 0.38, 0, 0.02, -0.1, mat(0x18101f));
+        box(0.062, 0.01, 0.34, 0, 0.065, -0.1, mat(0x9a40ff, 0, true));
+        tube(0.012, 0.012, 0.22, 0, 0.03, -0.38, mat(0x111114)); muzzle = -0.5; break;
+      case W_IDX.evLaser: // Zukunfts-Laser
+        box(0.07, 0.07, 0.36, 0, 0.02, -0.1, mat(0xe8eef4));
+        for (let k = 0; k < 3; k++) box(0.075, 0.075, 0.02, 0, 0.02, -0.02 - k * 0.09, mat(0x30e0ff, 0, true));
+        tube(0.02, 0.03, 0.08, 0, 0.02, -0.32, mat(0x30e0ff, 0, true)); muzzle = -0.37; break;
       default:
         box(0.06, 0.08, 0.3, 0, 0.02, -0.1, mat(0x555555));
     }

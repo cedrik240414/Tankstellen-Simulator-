@@ -30,13 +30,17 @@ const tp = (x, z, yaw, pit = 0) => ev(([x, z, yaw, pit]) => { const n = window._
 await page.goto(url);
 await shot('00-menu');
 
-// falsches Admin-Passwort wird abgelehnt
+// Titel -> Anfangen -> Login
+await page.click('[data-m=anfangen]');
 await page.fill('#un', 'crim'); await page.fill('#pw', 'falsch');
-await page.click('[data-a=start][data-v=tank]');
-check((await page.textContent('#lm')).includes('Falsches Passwort'), 'Admin mit falschem Passwort abgelehnt');
-
-await page.fill('#pw', 'Hotdog24');
-await page.click('[data-a=start][data-v=tank]');
+await page.click('[data-m=login]');
+await wait(300);
+check((await page.textContent('#mcontent')).includes('Falsches Passwort'), 'Admin mit falschem Passwort abgelehnt');
+await page.fill('#un', 'crim'); await page.fill('#pw', 'Hotdog24');
+await page.click('[data-m=login]');
+await wait(600);
+await shot('01-hauptmenue');
+await page.click('[data-m=play][data-v=tank]');
 await wait(800);
 check(await ev(() => window.__ns.S.adm === true), 'Admin-Login');
 await shot('01-tank-start');

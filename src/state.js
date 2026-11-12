@@ -16,3 +16,6 @@ export function setState(s) { S = s; }
 export const V = { yaw: 0, pit: 0, fl: 0, jx: 0, jy: 0, drg: 0 };
 /** gedrückte Tasten */
 export const K = {};
+
+/** Zugriff auf die 3D-Szene (von scene.js gefüllt): ev = Event-Abspieler */
+export const SC = {};

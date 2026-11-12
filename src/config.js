@@ -38,8 +38,11 @@ export const HEADS_TOTAL = 8;
 export const SKULL_SPOTS = [[3, -9], [-14, -5], [-1.2, -9.8], [-4.7, -28], [-9, -52], [-8, -5.5]];
 export const SECRET_MONEY = [25, 40, 60, 100, 50, 80];
 
-/** Upgrade-Kosten je Stufe */
-export const UPGRADE_COST = { mm: [100, 250, 500], dm: [120, 300, 600], hp: [80, 160, 240, 320, 400] };
+/** Upgrade-Kosten: unendlich viele Stufen, jede Stufe wird teurer */
+export const UPGRADE_BASE = { mm: [100, 1.7], dm: [120, 1.7], hp: [80, 1.5] };
+export const upgradeCost = (k, level) => Math.round(UPGRADE_BASE[k][0] * Math.pow(UPGRADE_BASE[k][1], level));
+/** Waffenstufe (Werkbank im Lager): ebenfalls ohne Obergrenze */
+export const weaponLevelCost = wl => Math.round(60 * Math.pow(1.5, wl - 1));
 
 // ---------------------------------------------------------------- Welten
 /** Ab wie vielen geschafften Schichten (gesamt) eine Welt aufgeht. */
@@ -61,7 +64,7 @@ const TIERS = ['Rost', 'Stahl', 'Silber', 'Gold', 'Dämon'];
 export const BASE_TYPE_NAMES = BASE_TYPES;
 
 /** Index-Konstanten (Indizes bleiben stabil, damit alte Spielstände passen). */
-export const W_IDX = { trash: 25, garden: 35, tankAltar: 49, knife: 50, pizzaAltar: 51, shop1: 52, shop2: 53, winterAltar: 54, pirateAltar: 55, halloAltar: 56 };
+export const W_IDX = { trash: 25, garden: 35, tankAltar: 49, knife: 50, pizzaAltar: 51, shop1: 52, shop2: 53, winterAltar: 54, pirateAltar: 55, halloAltar: 56, evBlade: 57, evBlaster: 58, evRifle: 59, evLaser: 60 };
 
 /**
  * Alle Waffen: { name, dmg, price, lock }
@@ -81,6 +84,11 @@ special(W_IDX.shop2, 'Apokalypse-Kanone', 140, 9000, null);
 special(W_IDX.winterAltar, 'Eisdrachen-Zorn', 200, 0, '🔒 Altar');
 special(W_IDX.pirateAltar, 'Klabautermann-Kanone', 250, 0, '🔒 Altar');
 special(W_IDX.halloAltar, 'Kürbiskönig-Vernichter', 300, 0, '🔒 Altar');
+// Event-Waffen (Dark Point Saga) – stark, aber unter den Altar-Waffen
+special(W_IDX.evBlade, 'Dark Blade', 150, 0, '🔒 Event');
+special(W_IDX.evBlaster, 'Light Blaster', 145, 0, '🔒 Event');
+special(W_IDX.evRifle, 'Shadow Rifle', 155, 0, '🔒 Event');
+special(W_IDX.evLaser, 'Zukunfts-Laser', 158, 0, '🔒 Event');
 WEAPONS[W_IDX.trash].lock = '🔒 Geheimnis';
 WEAPONS[W_IDX.garden].lock = '🔒 Garten';
 

@@ -27,10 +27,6 @@ export function dogModel(THREE, k) {
   // Körper aus vielen Fellbüscheln
   sph(0.42, 0, 1.25, 0, furM[0], 1, 1.25, 0.85);
   sph(0.26, 0, 1.25, 0.24, light, 1, 1.4, 0.6); // Brustfleck
-  for (let n = 0; n < 30; n++) {
-    const a = rand() * Math.PI * 2, h = 0.85 + rand() * 0.8, r = 0.36 + rand() * 0.05;
-    sph(0.1 + rand() * 0.07, Math.cos(a) * r, h, Math.sin(a) * r * 0.8, furPick());
-  }
   // Arme
   for (const s of [-1, 1]) {
     const arm = sph(0.12, s * 0.5, 1.2, 0.05, furPick(), 0.9, 2.6, 0.9);
@@ -40,10 +36,6 @@ export function dogModel(THREE, k) {
   // Kopf
   const HY = 2.0;
   sph(0.38, 0, HY, 0, furM[0], 1, 0.95, 0.95);
-  for (let n = 0; n < 18; n++) {
-    const a = rand() * Math.PI * 2, b = rand() * 1.2 - 0.3;
-    sph(0.08 + rand() * 0.05, Math.cos(a) * 0.33 * Math.cos(b), HY + Math.sin(b) * 0.3, Math.sin(a) * 0.3 * Math.cos(b) - 0.05, furPick());
-  }
   // Schnauze, Nase, Maul
   sph(0.19, 0, HY - 0.1, 0.3, light, 1.1, 0.85, 1.2);
   sph(0.07, 0, HY - 0.03, 0.51, lam(0x111111), 1.2, 0.85, 1);
@@ -60,11 +52,11 @@ export function dogModel(THREE, k) {
       : sph(0.14, s * 0.4, HY - 0.15, 0, earM, 0.6, 2.6, 0.6);       // Benni: lange Schlappohren
     ear.rotation.z = s * (k ? 0.9 : 0.18);
   }
-  // Cookie ist struppig: abstehende Haarbüschel
+  // Cookie ist struppig: ein paar abstehende Haarbüschel am Kopf
   if (k) {
     const tuft = lam(0xc8c8ce);
-    for (let n = 0; n < 26; n++) {
-      const a = rand() * Math.PI * 2, onHead = n < 12, y = onHead ? HY + 0.1 + rand() * 0.25 : 0.9 + rand() * 0.75, r = onHead ? 0.33 : 0.42;
+    for (let n = 0; n < 7; n++) {
+      const a = (n / 7) * Math.PI * 2 + rand() * 0.3, onHead = true, y = onHead ? HY + 0.1 + rand() * 0.25 : 0.9 + rand() * 0.75, r = onHead ? 0.33 : 0.42;
       const c = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.16, 5), tuft);
       c.position.set(Math.cos(a) * r, y, Math.sin(a) * r * 0.85);
       c.lookAt(c.position.x * 3, onHead ? y + 0.5 : y, c.position.z * 3);

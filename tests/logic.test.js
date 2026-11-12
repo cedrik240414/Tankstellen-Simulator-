@@ -84,10 +84,10 @@ describe('Welten freischalten', () => {
 });
 
 describe('Waffen und Altäre', () => {
-  it('50 Grundwaffen + Messer + Sonderwaffen, alle mit Namen und Schaden', () => {
-    expect(WEAPONS.length).toBe(57);
+  it('50 Grundwaffen + Messer + Sonder- und Event-Waffen, alle mit Namen und Schaden', () => {
+    expect(WEAPONS.length).toBe(61);
     for (const w of WEAPONS) { expect(w.name).toBeTruthy(); expect(w.dmg).toBeGreaterThan(0); }
-    expect(new Set(WEAPONS.map(w => w.name)).size).toBe(57);
+    expect(new Set(WEAPONS.map(w => w.name)).size).toBe(61);
   });
   it('Rangliste der Altar-Waffen stimmt mit der zentralen Tabelle', () => {
     for (const a of Object.values(ALTARS)) expect(L.weaponRank(a.weapon)).toBe(a.rank);

@@ -1,4 +1,4 @@
-# ⛽ Nachtschicht – SVE Studios
+# ⛽ Ganz normaler Tankstellen Simulator – SVE Studios
 
 Horror-Spiel im Browser: Nachtschicht an der Tankstelle, Ausweise prüfen, Anomalien erkennen, bis 6 Uhr überleben.
 Läuft auf dem iPad in Safari (Touch) und am Computer (Tastatur).
@@ -20,6 +20,32 @@ Nach dem ersten Deploy: `https://cedrik240414.github.io/Tankstellen-Simulator-/`
 1. Auf GitHub: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**.
 2. Auf `main` pushen (oder den Workflow „Tests und GitHub Pages“ unter *Actions* von Hand starten).
 3. Der Workflow testet, baut und veröffentlicht `dist/index.html`.
+
+## Online-Server (Rangliste, Admin, Events, Verlosung, Lobbys)
+
+Ohne Server läuft alles im **Offline-Modus** nur auf dem jeweiligen Gerät. Für den Online-Modus veröffentlicht GitHub Actions automatisch einen Cloudflare Worker (`worker/`), sobald zwei Secrets gesetzt sind:
+
+1. Cloudflare: **Manage account → Account API tokens → Create Token** mit der Berechtigung **Account → Workers Scripts → Edit**.
+2. GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+   - `CLOUDFLARE_API_TOKEN` = der Token
+   - `CLOUDFLARE_ACCOUNT_ID` = die Account-ID (steht auf der Cloudflare-Übersicht)
+3. Auf `main` pushen oder den Workflow von Hand starten. Der Workflow veröffentlicht den Server, baut das Spiel mit der Server-Adresse und veröffentlicht es auf GitHub Pages.
+
+Falls die Server-Adresse schon bekannt ist, kann sie auch als Repository-Variable `API_URL` hinterlegt werden.
+
+| Datei | Inhalt |
+|---|---|
+| `src/shared/core.js` | Server-Logik: Accounts, Rollen (Admin/OP), Bann, Geld geben/abziehen, Events, Verlosung, Lobbys |
+| `worker/index.js` | Cloudflare Worker mit Durable Object (SQLite) |
+| `src/net.js` | Verbindung zum Server, sonst Offline-Modus mit derselben Logik |
+| `src/menu.js` | Titelbildschirm, Hauptmenü, Rangliste, Shop, Ränge, Events, Verlosung, Lobby, Admin |
+| `src/content.js` | alle Skins mit Seltenheit, Ränge, Shop-Rotation (alle 2 Tage, 2 Gratis-Skins pro Monat) |
+| `src/skins3d.js` | 3D-Modelle der Skins |
+| `src/events.js` | die 15 Story-Events („The Dark Point Saga“) mit Cutscenes |
+
+### Rollen
+- **Admin** (`crim`): Spielerliste, bannen, Geld geben/abziehen, Rollen vergeben, Events planen, Verlosungen starten, Admin- und Hacker-Skin.
+- **OP** (`Dinnerboneagg`): bekommt einmalig 1000 € und den Hacker-Skin.
 
 ## Entwickeln
 

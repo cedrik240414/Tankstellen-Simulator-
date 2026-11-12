@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,7 +28,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
+
+      # Spiel-Server (Cloudflare Worker) – nur wenn die Secrets gesetzt sind und auf main
+      - name: Server veröffentlichen
+        id: worker
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::Kein CLOUDFLARE_API_TOKEN gesetzt – das Spiel läuft im Offline-Modus."
+            exit 0
+          fi
+          cd worker
+          npx wrangler deploy 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "Server-Adresse: $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Spiel bauen
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ steps.worker.outputs.url || vars.API_URL }}
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
