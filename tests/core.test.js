@@ -86,6 +86,17 @@ describe('Admin', () => {
     call('admin_act', { target: 'Mia', act: 'role', role: 'op' }, adm);
     expect(call('state', {}, mia).body.me.pending).toBe(OP_BONUS);
   });
+  it('allen Spielern Geld geben (gebannte nicht), nur Admins dürfen das', () => {
+    const ben = login('Ben').token;
+    call('admin_act', { target: 'Ben', act: 'ban' }, adm);
+    expect(call('admin_all', { act: 'money', amount: 250 }, mia).status).toBe(403);
+    expect(call('admin_all', { act: 'money', amount: 250 }, adm).body.count).toBe(2);
+    expect(call('state', {}, mia).body.me.pending).toBe(250);
+    call('admin_act', { target: 'Ben', act: 'unban' }, adm);
+    expect(call('state', {}, ben).body.me.pending).toBe(0);
+    call('admin_all', { act: 'money', amount: -100 }, adm);
+    expect(call('state', {}, mia).body.me.pending).toBe(150);
+  });
   it('Haupt-Admin ist geschützt', () => {
     call('admin_act', { target: 'Mia', act: 'role', role: 'admin' }, adm);
     expect(call('admin_act', { target: 'crim', act: 'ban' }, mia).body.ok).toBe(false);

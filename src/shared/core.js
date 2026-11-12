@@ -177,6 +177,20 @@ export function handle(db, mem, req, now = Date.now(), rand = Math.random) {
       P(db, 'p:' + target, p); updateIndex(db, target, p);
       return ok({});
     }
+    case 'admin_all': {
+      const e = needAdmin(); if (e) return e;
+      if (b.act !== 'money') return err('Unbekannte Aktion.');
+      const a = Math.trunc(Number(b.amount));
+      if (!Number.isFinite(a) || a === 0) return err('Betrag fehlt.');
+      const idx = J(db, 'idx', {});
+      let n = 0;
+      for (const name of Object.keys(idx)) {
+        const p = J(db, 'p:' + name, null);
+        if (!p || p.banned) continue;
+        p.pending = (p.pending || 0) + a; P(db, 'p:' + name, p); n++;
+      }
+      return ok({ count: n });
+    }
     case 'admin_event_create': {
       const e = needAdmin(); if (e) return e;
       const type = Math.trunc(Number(b.type));

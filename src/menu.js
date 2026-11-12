@@ -163,11 +163,17 @@ function lobbyView() {
 }
 function adminView() {
   if (!admin) { loadAdmin(); return '<div class=card><p>Lade Spieler …</p></div>'; }
-  return `<div class=card><h3>🛡️ Alle Spieler (${admin.length})</h3><p>Betrag: <input id=amt type=number value=500 style="width:120px;min-width:0"> € <button data-m=adrefresh>🔄 Neu laden</button></p><table class=lb><tr><th>Spieler</th><th>Rolle</th><th>Schichten</th><th>Geld</th><th>Aktionen</th></tr>`
-    + admin.map(p => `<tr class="${p.banned ? 'ban' : ''}"><td>${esc(displayName(p.name, p.rank, p.role))}${p.banned ? ' ⛔' : ''}</td><td>${p.role}</td><td>${p.shifts}</td><td>${p.money}€</td><td class=acts>`
+  const roleName = r => (r === 'admin' ? '🛡️ Admin' : r === 'op' ? '⭐ OP' : 'Spieler');
+  return `<div class=card><h3>🌍 Alle Spieler auf einmal</h3><p class=mu>Gilt für alle ${admin.filter(p => !p.banned).length} nicht gebannten Spieler (auch dich).</p>
+    <div class=btns><input id=allamt type=number value=500 min=1 style="max-width:160px"> €<button class=red data-m=adall data-x=give>🎁 Allen Geld geben</button><button data-m=adall data-x=take>➖ Allen Geld abziehen</button></div></div>
+    <div class=card><h3>🛡️ Alle Spieler (${admin.length})</h3>
+    <div class=btns><input id=adsearch placeholder="🔍 Spieler suchen" autocomplete=off><span>Betrag: <input id=amt type=number value=500 style="width:120px;min-width:0"> €</span><button data-m=adrefresh>🔄 Neu laden</button></div>
+    <table class=lb id=adtable><tr><th>Spieler</th><th>Rolle</th><th>Schichten</th><th>Geld</th><th>Aktionen</th></tr>`
+    + admin.map(p => `<tr data-n="${esc(p.name.toLowerCase())}" class="${p.banned ? 'ban' : ''}"><td>${esc(displayName(p.name, p.rank, p.role))}${p.banned ? ' ⛔ gebannt' : ''}</td><td>${roleName(p.role)}</td><td>${p.shifts}</td><td>${p.money}€</td><td class=acts>`
       + (p.name === S.name ? '<span class=mu>(du)</span>' : `<button data-m=ad data-v="${esc(p.name)}" data-x=${p.banned ? 'unban' : 'ban'}>${p.banned ? '✅ Entbannen' : '⛔ Bannen'}</button>
         <button data-m=ad data-v="${esc(p.name)}" data-x=give>➕ Geld</button><button data-m=ad data-v="${esc(p.name)}" data-x=take>➖ Geld</button>
-        <select data-m=adrole data-v="${esc(p.name)}">${['player', 'op', 'admin'].map(r => `<option ${p.role === r ? 'selected' : ''} value=${r}>${r === 'player' ? 'Spieler' : r === 'op' ? 'OP' : 'Admin'}</option>`).join('')}</select>`) + '</td></tr>').join('')
+        ${p.role === 'admin' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>Admin wegnehmen</button>` : `<button class=hl data-m=adr data-v="${esc(p.name)}" data-x=admin>🛡️ Admin geben</button>`}
+        ${p.role === 'op' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>OP wegnehmen</button>` : p.role === 'player' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=op>⭐ OP geben</button>` : ''}`) + '</td></tr>').join('')
     + '</table></div>';
 }
 async function loadAdmin() {
@@ -300,6 +306,20 @@ async function act(a, v, el) {
     case 'lobleave': if (lobby) await call('lobby_leave', { code: lobby.code }); lobby = null; break;
     case 'lobplay': if (lobby) G.startGame(lobby.world, lobby.code); return;
     case 'adrefresh': admin = null; break;
+    case 'adr': {
+      const r = await call('admin_act', { target: v, act: 'role', role: el.dataset.x });
+      msg = r.ok ? `✅ ${v} ist jetzt ${el.dataset.x === 'admin' ? 'Admin' : el.dataset.x === 'op' ? 'OP' : 'Spieler'}.` : r.error;
+      admin = null; break;
+    }
+    case 'adall': {
+      const amt = Math.abs(+$('#allamt').value || 0);
+      if (!amt) { msg = 'Betrag eingeben.'; break; }
+      const give = el.dataset.x === 'give';
+      if (!confirm(`${give ? 'Allen Spielern ' + amt + '€ geben' : 'Allen Spielern ' + amt + '€ abziehen'}?`)) return;
+      const r = await call('admin_all', { act: 'money', amount: give ? amt : -amt });
+      msg = r.ok ? `✅ ${r.count} Spieler: ${give ? '+' : '−'}${amt}€` : r.error;
+      await poll(true); admin = null; break;
+    }
     case 'ad': {
       const amt = Math.abs(+$('#amt').value || 0), x = el.dataset.x;
       const body = x === 'give' || x === 'take' ? { target: v, act: 'money', amount: x === 'give' ? amt : -amt } : { target: v, act: x };
@@ -322,6 +342,11 @@ export function initMenu() {
     const t = e.target;
     if (t.dataset.m === 'adrole') { const r = await call('admin_act', { target: t.dataset.v, act: 'role', role: t.value }); msg = r.ok ? `✅ ${t.dataset.v} ist jetzt ${t.value}.` : r.error; admin = null; render(); }
     if (t.dataset.m === 'tie') { S.tie = parseInt(t.value.slice(1), 16); G.save(); setPreview(S.skin); sync(); }
+  });
+  document.addEventListener('input', e => {
+    if (e.target.id !== 'adsearch') return;
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#adtable tr[data-n]').forEach(tr => { tr.style.display = !q || tr.dataset.n.includes(q) ? '' : 'none'; });
   });
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.id === 'pw' || e.target.id === 'un')) doLogin(); });
   setInterval(tickCountdowns, 1000);
