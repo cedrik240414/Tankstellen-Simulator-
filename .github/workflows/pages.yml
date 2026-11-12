@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      cf_token:
+        description: 'Cloudflare API Token (nur für dieses eine Veröffentlichen, wird nicht gespeichert)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -34,6 +39,10 @@ jobs:
         id: worker
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
+          # Token aus dem manuellen Start übernehmen (wird in den Logs verborgen)
+          IN_TOKEN=$(jq -r '.inputs.cf_token // empty' "$GITHUB_EVENT_PATH")
+          if [ -n "$IN_TOKEN" ]; then echo "::add-mask::$IN_TOKEN"; export CLOUDFLARE_API_TOKEN="$IN_TOKEN"; fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then export CLOUDFLARE_ACCOUNT_ID=3440183c56ca9fbf69d17d9f7dcc3e27; fi
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::notice::Kein CLOUDFLARE_API_TOKEN gesetzt – das Spiel läuft im Offline-Modus."
             exit 0
@@ -47,7 +56,7 @@ jobs:
       - name: Spiel bauen
         run: npm run build
         env:
-          VITE_API_URL: ${{ steps.worker.outputs.url || vars.API_URL }}
+          VITE_API_URL: ${{ steps.worker.outputs.url || vars.API_URL || '' }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
