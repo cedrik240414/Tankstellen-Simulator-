@@ -21,7 +21,7 @@ export const SKINS = [
   s('standard', 'Standard', 'common', '🧍', { shirt: 0x3a7a4a }),
   // ---------- gewünschte Skins
   s('anzug', 'Anzug', 'uncommon', '🤵', { shirt: 0xf4f4f4, jacket: 0x1d2330, pants: 0x1d2330, tie: true }),
-  s('lila', 'Lila Mann', 'epic', '🟪', { shirt: 0x7a35b8, pants: 0x6a2aa0, tie: true, tieColor: 0x111111, hair: 0x3a2a1a }),
+  s('lila', 'William Afton', 'epic', '🟪', { shirt: 0x7a35b8, pants: 0x6a2aa0, tie: true, tieColor: 0x111111, hair: 0x3a2a1a }),
   s('kuerbis', 'Kürbiskopf', 'epic', '🎃', { head: 'pumpkin', shirt: 0x2a1a30, pants: 0x1a1020, cape: 0x3a1050 }),
   s('winter', 'Winter', 'rare', '❄️', { shirt: 0x2e6ad6, pants: 0x223355, hat: 'beanie', hatColor: 0xd03030, scarf: 0xf4f4f4 }),
   s('maskiert', 'Schwarz Maskiert', 'legendary', '🥷', { head: 'mask', shirt: C.black, pants: C.black, shoes: C.black, cape: 0x111111, glow: 0xa040ff }),
