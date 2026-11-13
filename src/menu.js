@@ -229,7 +229,7 @@ function adminView() {
 /** Admin: jedes Event sofort ansehen, ohne Belohnung und ohne andere Spieler */
 function evTestView() {
   return `<div class=card><h3>🧪 Events testen</h3><p class=mu>Spielt das Event sofort nur für dich ab. Keine Belohnung, nichts wird gespeichert, andere Spieler merken nichts. Mit ⏹ kannst du jederzeit abbrechen.</p><div class=grid>`
-    + STORY.map((e, i) => `<div class=skin><div class=se>${['☄️', '🛸', '📻', '👤', '🌀', '💭', '🏚️', '🌗', '🎭', '🌌', '🔋', '👁️', '🔑', '⚔️', '❓'][i]}</div><b>${i + 1}. ${esc(e.t)}</b><small class=mu>${e.task ? '🎮 mit Aufgabe' : '🎬 nur Cutscene'}${e.reward ? ' · 🔫 Waffe' : ''}</small><button class=red data-m=evtest data-v=${i + 1}>▶ Testen</button></div>`).join('')
+    + STORY.map((e, i) => `<div class=skin><div class=se>${['☄️', '🛸', '📻', '👤', '🌀', '💭', '🏚️', '🌗', '🎭', '🌌', '🔋', '👁️', '🔑', '⚔️', '❓'][i]}</div><b>${i + 1}. ${esc(e.t)}</b><small class=mu>${e.task ? '🎮 mit Aufgabe' : '🎬 nur Cutscene'}${e.reward ? ' · 🔫 Waffe' : ''}${e.skin ? ' · 👕 Skin' : ''}</small><button class=red data-m=evtest data-v=${i + 1}>▶ Testen</button></div>`).join('')
     + `</div><p class=mu>Den ganzen Ablauf (Countdown → 10 Min. Beitritt → Live) testest du unter 🎉 Events mit einem Event „in 1 Minute“.</p></div>`;
 }
 async function loadAdmin() {
@@ -327,6 +327,7 @@ function startLive(e) {
     S.m += rw.money;
     let t = `Event geschafft! +${rw.money}€`;
     if (rw.weapon != null && !S.own.includes(rw.weapon)) { S.own.push(rw.weapon); S.wi = rw.weapon; t += ` · Du wurdest ausgewählt: ${WEAPONS[rw.weapon].name}!`; }
+    if (rw.skin && !S.skins.includes(rw.skin)) { S.skins.push(rw.skin); t += ` · 🎁 Gratis-Skin: ${SKIN[rw.skin].name}!`; }
     S.evDone.push(e.id); S.evDone = S.evDone.slice(-50);
     sync();
     showMenu('🎉 ' + t);

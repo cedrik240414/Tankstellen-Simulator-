@@ -21,7 +21,7 @@ export const STORY = [
   ], task: { shoot: 'masked', text: '🥷 Besiege die maskierte Gestalt! Schieß auch ihre Energiekugeln ab!', n: 30, time: 90 }, after: [
     sh('Die Gestalt ist verletzt und fliegt davon.', [-16, 2, 13], [-15, 3, 12], [-9, 3, 10], 5, ['figureFly']),
     sh('Der Dark Point gehört jetzt dir.', [-14, 1.8, 11.5], [-13, 1.6, 10.8], [-12, 1.2, 10], 4, ['orb']),
-  ], reward: 'blade' },
+  ], reward: 'blade', skin: 'maskiert' },
   { t: 'The New Visitors', abduct: true, shots: [
     sh('Am nächsten Abend wollen alle Kunden plötzlich nach draußen.', OUT, [-24, 4, 16], SHOP, 4),
     sh('Ein riesiges Raumschiff erscheint über der Tankstelle!', OUT, [-28, 2, 20], [0, 12, 0], 6, ['ship']),
@@ -126,13 +126,14 @@ export const EVENT_TITLES = STORY.map((e, i) => `${i + 1}. ${e.t}`);
 /** ausgewählte Spieler bekommen eine Waffe: fest pro Spieler und Event (etwa jeder Dritte) */
 export function eventReward(type, eventId, name) {
   const st = STORY[type - 1];
+  const skin = (st && st.skin) || null; // Skin bekommen ALLE Teilnehmer
   let h = 0;
   for (const ch of eventId + '|' + name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const money = 250 + 50 * type;
-  if (!st || !st.reward) return { money, weapon: null };
-  if (h % 3 !== 0) return { money, weapon: null };
+  if (!st || !st.reward) return { money, weapon: null, skin };
+  if (h % 3 !== 0) return { money, weapon: null, skin };
   const w = st.reward === 'any' ? Object.values(EV_WEAPON)[h % 4] : EV_WEAPON[st.reward];
-  return { money, weapon: w };
+  return { money, weapon: w, skin };
 }
 
 // ---------------------------------------------------------------- Abspielen
