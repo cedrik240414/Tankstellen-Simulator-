@@ -102,3 +102,13 @@ label{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .evsmall{flex-basis:100%;font:800 16px system-ui,sans-serif;color:#ffe060;background:#2a0a3a;border:1px solid #a040ff;border-radius:6px;padding:6px 10px;text-align:center}
 #evskip{position:absolute;right:10px;top:10px;z-index:8;background:#5a1712;border:2px solid #ff6060;font-weight:bold}
 #fp:not(.cut) #evskip{display:none}
+/* ================= Schießabschnitte ================= */
+#shud,#hurt{display:none}
+#fp.cut.shooting #fb,#fp.cut.shooting #xh{display:flex!important}
+#fp.cut.shooting #xh{display:block!important;font-size:34px;color:#e0a0ff;text-shadow:0 0 8px #a040ff}
+#fp.cut.shooting #fb{align-items:center;justify-content:center;background:#6a20a0;border-color:#d080ff}
+#fp.cut.shooting #cap{display:none}
+#shud{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:6;background:#000b;color:#fff;font:700 17px/1.4 system-ui,sans-serif;padding:8px 16px;border-radius:10px;text-align:center;max-width:90%;border:1px solid #a040ff}
+.bossbar{display:inline-block;width:160px;height:12px;background:#311;border:1px solid #f44;vertical-align:middle}.bossbar i{display:block;height:100%;background:#f33}
+#hurt{position:absolute;inset:0;z-index:5;pointer-events:none;box-shadow:inset 0 0 120px 40px #f00}
+#hurt.show{display:block;animation:hurtfx .5s forwards}@keyframes hurtfx{from{opacity:1}to{opacity:0}}

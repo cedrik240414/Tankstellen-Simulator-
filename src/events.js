@@ -2,6 +2,7 @@
 // Jedes Event ist eine Folge von Kameraeinstellungen (shots) mit Story-Text,
 // Bühnenteilen (props) und manchmal einer kleinen Aufgabe (task).
 import { skinModel } from './skins3d.js';
+import { createShooter } from './shooter.js';
 
 /** Event-Waffen (Indizes in config.js WEAPONS) */
 export const EV_WEAPON = { blade: 57, blaster: 58, rifle: 59, laser: 60 };
@@ -23,7 +24,7 @@ export const STORY = [
     sh('Am nächsten Abend wollen alle Kunden plötzlich nach draußen.', OUT, [-24, 4, 16], SHOP, 4),
     sh('Ein riesiges Raumschiff erscheint über der Tankstelle!', OUT, [-28, 2, 20], [0, 12, 0], 6, ['ship']),
     sh('Eine Gruppe Aliens kommt aus dem Raumschiff.', [-20, 2, 14], [-18, 2, 12], [-10, 1, 9], 5, ['ship', 'aliens']),
-  ], task: { text: 'Verteidige die Tankstelle mit dem Dark Point!', btn: '⚡ Dark Point', n: 15 }, after: [
+  ], task: { shoot: 'aliens', text: '👽 Alien-Horde! Schieß sie mit dem Dark Point ab!', n: 25, time: 80 }, after: [
     sh('Das Raumschiff explodiert, die Kapitänin flieht in den Trümmern.', OUT, [-30, 3, 22], [0, 12, 0], 5, ['explode']),
     sh('Sie schreit: „ICH KRIEGE DICH NOCH!“', OUT, OUT, [0, 14, 0], 4),
   ] },
@@ -44,7 +45,7 @@ export const STORY = [
   { t: 'The Dark Invasion', shots: [
     sh('Der Himmel wird dunkel. Über der Tankstelle erscheinen mehrere Portale.', OUT, [-28, 2, 22], SKY, 5, ['portals', 'dark']),
     sh('Aus den Portalen kommen dunkle Kreaturen und fliegen auf die Tankstelle zu!', [-20, 3, 15], [-16, 3, 12], [0, 6, 0], 6, ['portals', 'creatures', 'dark']),
-  ], task: { text: 'Lauf zum Dark Point und aktiviere ihn!', btn: '🟣 Aktivieren', n: 12 }, after: [
+  ], task: { shoot: 'flyers', text: '🌀 Schattenkreaturen! Schieß sie ab, bevor sie dich erreichen!', n: 20, time: 70 }, after: [
     sh('Der Dark Point erzeugt eine riesige Schutzkuppel. Die Kreaturen prallen ab.', OUT, [-32, 6, 26], SHOP, 6, ['dome', 'creatures', 'portals']),
     sh('Die maskierte Gestalt erscheint: „Ihr habt gerade erst angefangen.“', [-14, 1.8, 11], [-13, 1.8, 10.5], [-10, 1.6, 10], 5, ['figure', 'dome']),
   ], reward: 'blaster' },
@@ -84,7 +85,7 @@ export const STORY = [
   { t: 'The Last Defense', abduct: true, shots: [
     sh('Die Aliens greifen erneut an – diesmal viel stärker.', OUT, [-28, 3, 20], [0, 10, 0], 5, ['ship', 'fleet', 'aliens']),
     sh('Die Tankstelle wird beschädigt, überall Explosionen!', [-20, 3, 14], [-18, 4, 12], SHOP, 5, ['explode', 'aliens', 'flicker']),
-  ], task: { text: 'Aktiviert gemeinsam den Energiegenerator!', btn: '🔋 Generator', n: 20 }, after: [
+  ], task: { shoot: 'aliens', fast: true, text: '👽 Die Aliens greifen stärker an! Halte sie auf!', n: 35, time: 95 }, after: [
     sh('Die Raumschiffe fliegen weg …', OUT, [-30, 3, 22], [0, 20, -30], 5, ['fleet']),
     sh('… doch eines bleibt zurück.', OUT, OUT, [0, 12, 0], 4, ['ship']),
   ] },
@@ -98,13 +99,13 @@ export const STORY = [
     sh('Der Dark Point reagiert auf die Gefahr.', [-14, 1.8, 12], [-13.5, 1.8, 11.5], [-12, 1.2, 10], 4, ['orb']),
     sh('Er teilt sich in viele kleine Energiekerne, die zu euch fliegen.', [-18, 3, 15], [-20, 5, 18], [-12, 2, 10], 6, ['shards']),
     sh('Ausgewählte Spieler erhalten Waffen mit eigener Fähigkeit: Dark Blade, Light Blaster, Plasma Cannon, Shadow Rifle.', [-14, 1.8, 12], [-14, 1.8, 12], [-12, 2, 10], 6, ['shards']),
-  ], task: { text: 'Schließt gemeinsam das Portal!', btn: '🌀 Schließen', n: 15 }, after: [
+  ], task: { shoot: 'cores', text: '💠 Zerstöre die Energiekerne, um das Portal zu schließen!', n: 8, time: 50 }, after: [
     sh('Das Portal schließt sich.', OUT, OUT, [0, 8, -20], 4, ['portalClose']),
   ], reward: 'any' },
   { t: 'The Final Battle', shots: [
     sh('Das letzte große Gefecht beginnt. Die dunkle Kreatur landet vor der Tankstelle.', OUT, [-32, 2, 26], [0, 10, -25], 6, ['creature', 'dark']),
     sh('Sie wird immer größer und zerstört die Umgebung.', [0, 3, 12], [0, 2, 6], [0, 18, -25], 5, ['creatureGrow', 'explode', 'dark']),
-  ], task: { text: 'Kämpft gemeinsam gegen die Kreatur!', btn: '🔫 Angreifen', n: 30 }, after: [
+  ], task: { shoot: 'boss', text: '👹 Besiegt die dunkle Kreatur!', n: 60, time: 110 }, after: [
     sh('Die maskierte Gestalt taucht wieder auf und setzt ihre gesamte Energie ein.', [-14, 2, 12], [-15, 3, 13], [0, 10, -20], 6, ['figure', 'creature', 'beam']),
     sh('Zusammen schafft ihr es: Die Kreatur ist besiegt.', OUT, [-34, 8, 30], [0, 10, -25], 5, ['explode']),
     sh('Doch die maskierte Gestalt verschwindet danach spurlos.', [-14, 1.8, 12], [-14, 1.8, 12], [-10, 1.6, 10], 4),
@@ -278,7 +279,7 @@ export function createPlayer(api) {
     },
   };
 
-  let shots = [], i = -1, t = 0, T = 0, active = false, onEnd = null, taskOpen = false, ev = null;
+  let shots = [], i = -1, t = 0, T = 0, active = false, onEnd = null, taskOpen = false, ev = null, shooter = null;
   const v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
 
   function setProps(names) {
@@ -290,7 +291,9 @@ export function createPlayer(api) {
     if (i >= shots.length) {
       if (ev.task && !taskOpen && !ev._taskDone) {
         taskOpen = true;
-        api.ui.task(ev.task, () => { if (ev._taskDone || !active) return; ev._taskDone = true; taskOpen = false; shots = shots.concat(ev.after || []); next(); });
+        const cont = () => { if (ev._taskDone || !active) return; ev._taskDone = true; taskOpen = false; shooter = null; api.ui.caption(''); shots = shots.concat(ev.after || []); next(); };
+        if (ev.task.shoot) { setProps([]); api.ui.caption(''); shooter = createShooter(api, ev.task, cont); }
+        else api.ui.task(ev.task, cont);
         return;
       }
       return finish();
@@ -302,6 +305,7 @@ export function createPlayer(api) {
   }
   function finish() {
     active = false;
+    if (shooter) { shooter.abort(); shooter = null; }
     setProps([]);
     api.ui.caption('');
     api.ui.filter('');
@@ -309,6 +313,8 @@ export function createPlayer(api) {
   }
   return {
     get active() { return active; },
+    get shooting() { return !!shooter; },
+    fire() { if (shooter) shooter.fire(); },
     start(type, done) {
       ev = { ...STORY[type - 1] };
       shots = [];
@@ -327,6 +333,7 @@ export function createPlayer(api) {
       if (!active) return;
       T += dt;
       for (const o of Object.values(props)) if (o.userData.tick) o.userData.tick(T - o.userData.t0);
+      if (shooter) { shooter.update(dt); return; }
       if (taskOpen) { cam.position.set(-20, 4, 15); cam.lookAt(...SHOP); return; }
       const s = shots[i]; if (!s) return;
       t += dt;

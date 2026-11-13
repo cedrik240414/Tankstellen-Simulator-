@@ -392,7 +392,7 @@ export function act(a, v) {
     case 'menu': goMenu(); return;
     case 'gate': if (S.m < GATE_PRICE) { say('Zu wenig Geld.'); return; } S.m -= GATE_PRICE; S.gate = 1; say('Gerät am Eingang installiert. Es piept bei Diebstahl.'); break;
     case 'idc': if (!c || !c.arr || V.drg > 10) return; S.ds = idsay(c); break;
-    case 'zap': { if (!pl) return; const n = performance.now(); if (n - S.lf < Math.max(250, 900 - 100 * S.wl)) return; S.lf = n; V.fl = 9; window.FIRE2(); return; }
+    case 'zap': { if (S.ph == 'event') { SC.ev.fire(); return; } if (!pl) return; const n = performance.now(); if (n - S.lf < Math.max(250, 900 - 100 * S.wl)) return; S.lf = n; V.fl = 9; window.FIRE2(); return; }
     case 'tab': S.mt = +v; break;
     case 'bw': {
       const r = L.canBuyWeapon(+v, S.own, S.m);
@@ -557,6 +557,7 @@ export function startGameLoop() {
     }
     const qte = { arrowup: 'U', arrowdown: 'D', arrowleft: 'L', arrowright: 'R' }[e.key.toLowerCase()];
     if (qte && S && S.qt && S.qt.on) { e.preventDefault(); if (!e.repeat) act('qa', qte); return; }
+    if (e.key == ' ' && S && S.ph == 'event') { e.preventDefault(); SC.ev.fire(); return; }
     if (e.key == ' ' && S && S.ph == 'play') { e.preventDefault(); act(S.boss && S.boss.f ? 'fire' : 'zap'); return; }
     if (e.key.toLowerCase() == 'm' && S && S.ph == 'play') { act('mon'); return; }
     K[e.key.toLowerCase()] = 1;
