@@ -24,7 +24,7 @@ export const STORY = [
     sh('Am nächsten Abend wollen alle Kunden plötzlich nach draußen.', OUT, [-24, 4, 16], SHOP, 4),
     sh('Ein riesiges Raumschiff erscheint über der Tankstelle!', OUT, [-28, 2, 20], [0, 12, 0], 6, ['ship']),
     sh('Eine Gruppe Aliens kommt aus dem Raumschiff.', [-20, 2, 14], [-18, 2, 12], [-10, 1, 9], 5, ['ship', 'aliens']),
-  ], task: { shoot: 'swarm', text: '👽 Alien-Horde am Himmel! Schieß sie mit dem Dark Point ab!', n: 40, time: 90 }, after: [
+  ], task: { shoot: 'aliens', horde: true, text: '👽 Alien-Horde! Schieß sie mit dem Dark Point ab!', n: 40, time: 90 }, after: [
     sh('Das Raumschiff explodiert, die Kapitänin flieht in den Trümmern.', OUT, [-30, 3, 22], [0, 12, 0], 5, ['explode']),
     sh('Sie schreit: „ICH KRIEGE DICH NOCH!“', OUT, OUT, [0, 14, 0], 4),
   ] },

@@ -37,7 +37,7 @@ export function createShooter(api, cfg, onDone) {
     ship.add(new THREE.Mesh(new THREE.SphereGeometry(2.6, 20, 12), lam(0xaaf0ff, 0x2090a0)));
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 5, 13, 20, 1, true), bas(0x9fffe0, 0.16)); beam.material.side = THREE.DoubleSide; beam.position.y = -6.5; ship.add(beam);
     for (let i = 0; i < 12; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), bas(i % 2 ? 0xffe060 : 0x60ffd0)); l.position.set(Math.cos(i / 12 * 6.28) * 5.4, -0.3, Math.sin(i / 12 * 6.28) * 5.4); ship.add(l); }
-    ship.position.set(-24, 13, 6); root.add(ship); root.userData.ship = ship;
+    ship.position.set(-26, 13, 8); root.add(ship); root.userData.ship = ship;
   }
   if (cfg.shoot === 'cores' || cfg.shoot === 'flyers') {
     const p = new THREE.Group();
@@ -66,7 +66,7 @@ export function createShooter(api, cfg, onDone) {
     root.add(g); enemies.push(g);
   }
 
-  V.yaw = START_YAW; V.pit = cfg.shoot === 'swarm' ? 0.5 : cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
+  V.yaw = START_YAW; V.pit = cfg.horde ? -0.05 : cfg.shoot === 'swarm' ? 0.5 : cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
   ui.shooting(true);
   hud();
 
@@ -88,7 +88,7 @@ export function createShooter(api, cfg, onDone) {
       root.add(a); enemies.push(a);
     } else if (cfg.shoot === 'aliens') {
       const a = skinModel(THREE, 'alien');
-      a.position.set(-24 + (Math.random() - 0.5) * 2, 0, 6 + (Math.random() - 0.5) * 16);
+      a.position.set(-26 + (Math.random() - 0.5) * 6, 0, 8 + (Math.random() - 0.5) * 14);
       a.userData.kind = 'alien'; a.userData.hp = cfg.fast ? 2 : 1; a.userData.sp = (cfg.fast ? 1.8 : 1.2) + Math.random() * 0.6; a.userData.hit = 0;
       root.add(a); enemies.push(a);
     } else if (cfg.shoot === 'flyers') {
@@ -124,7 +124,15 @@ export function createShooter(api, cfg, onDone) {
       for (const e of enemies) {
         const c = e.getWorldPosition(new THREE.Vector3());
         if (e.userData.kind === 'alien' || e.userData.kind === 'swarm') c.y += 1.0;
-        const dir = c.clone().sub(rc.ray.origin), d = dir.length(), a = dir.normalize().angleTo(rc.ray.direction);
+        const dir = c.clone().sub(rc.ray.origin), d = dir.length();
+        let a;
+        if (e.userData.kind === 'alien') {
+          // Gegner am Boden: nur die Richtung links/rechts zählt, die Höhe zielt automatisch
+          const rd = rc.ray.direction;
+          a = Math.abs(Math.atan2(dir.x, dir.z) - Math.atan2(rd.x, rd.z));
+          if (a > Math.PI) a = 2 * Math.PI - a;
+          a *= 0.6;
+        } else a = dir.normalize().angleTo(rc.ray.direction);
         if (a < bestA && d < 45) { bestA = a; best = { object: e.children[0] || e, point: c }; }
       }
       if (best) hits = [best];
@@ -188,9 +196,9 @@ export function createShooter(api, cfg, onDone) {
     if (!ended) {
       if (t >= cfg.time) timeUp();
       spawnT -= dt;
-      const maxAlive = cfg.shoot === 'swarm' ? 18 : cfg.fast ? 14 : 10;
+      const maxAlive = cfg.shoot === 'swarm' || cfg.horde ? 18 : cfg.fast ? 14 : 10;
       if (spawnT <= 0 && ['aliens', 'flyers', 'swarm'].includes(cfg.shoot) && enemies.length < maxAlive) {
-        spawn(); spawnT = (cfg.shoot === 'swarm' ? 0.45 : cfg.fast ? 0.7 : 1.1) + Math.random() * 0.6;
+        spawn(); spawnT = (cfg.shoot === 'swarm' || cfg.horde ? 0.45 : cfg.fast ? 0.7 : 1.1) + Math.random() * 0.6;
       }
     }
     const ship = root.userData.ship; if (ship) ship.rotation.y += dt * 0.6;
