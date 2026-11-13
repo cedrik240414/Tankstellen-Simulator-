@@ -167,11 +167,12 @@ function adminView() {
   return `<div class=card><h3>🌍 Alle Spieler auf einmal</h3><p class=mu>Gilt für alle ${admin.filter(p => !p.banned).length} nicht gebannten Spieler (auch dich).</p>
     <div class=btns><input id=allamt type=number value=500 min=1 style="max-width:160px"> €<button class=red data-m=adall data-x=give>🎁 Allen Geld geben</button><button data-m=adall data-x=take>➖ Allen Geld abziehen</button></div></div>
     <div class=card><h3>🛡️ Alle Spieler (${admin.length})</h3>
-    <div class=btns><input id=adsearch placeholder="🔍 Spieler suchen" autocomplete=off><span>Betrag: <input id=amt type=number value=500 style="width:120px;min-width:0"> €</span><button data-m=adrefresh>🔄 Neu laden</button></div>
+    <div class=btns><input id=adsearch placeholder="🔍 Spieler suchen" autocomplete=off><button data-m=adrefresh>🔄 Neu laden</button></div>
     <table class=lb id=adtable><tr><th>Spieler</th><th>Rolle</th><th>Schichten</th><th>Geld</th><th>Aktionen</th></tr>`
     + admin.map(p => `<tr data-n="${esc(p.name.toLowerCase())}" class="${p.banned ? 'ban' : ''}"><td>${esc(displayName(p.name, p.rank, p.role))}${p.banned ? ' ⛔ gebannt' : ''}</td><td>${roleName(p.role)}</td><td>${p.shifts}</td><td>${p.money}€</td><td class=acts>`
       + (p.name === S.name ? '<span class=mu>(du)</span>' : `<button data-m=ad data-v="${esc(p.name)}" data-x=${p.banned ? 'unban' : 'ban'}>${p.banned ? '✅ Entbannen' : '⛔ Bannen'}</button>
-        <button data-m=ad data-v="${esc(p.name)}" data-x=give>➕ Geld</button><button data-m=ad data-v="${esc(p.name)}" data-x=take>➖ Geld</button>
+        <div class=btns><input class=pamt data-p="${esc(p.name)}" type=number min=0 value=500 style="max-width:120px;min-width:0" aria-label="Betrag für ${esc(p.name)}"> €
+        <button data-m=ad data-v="${esc(p.name)}" data-x=give>➕ Geben</button><button data-m=ad data-v="${esc(p.name)}" data-x=take>➖ Abziehen</button><button data-m=ad data-v="${esc(p.name)}" data-x=set>🟰 Setzen</button></div>
         ${p.role === 'admin' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>Admin wegnehmen</button>` : `<button class=hl data-m=adr data-v="${esc(p.name)}" data-x=admin>🛡️ Admin geben</button>`}
         ${p.role === 'op' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>OP wegnehmen</button>` : p.role === 'player' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=op>⭐ OP geben</button>` : ''}`) + '</td></tr>').join('')
     + '</table></div>';
@@ -228,6 +229,13 @@ export async function poll(force) {
   srvOff = r.now - Date.now();
   ST = r;
   if (r.me && r.me.role && r.me.role !== S.role) { S.role = r.me.role; S.adm = r.me.role === 'admin'; }
+  if (r.me && r.me.setMoney != null) {
+    const v = r.me.setMoney;
+    S.m = v;
+    msg = `💶 Ein Admin hat dein Geld auf ${v}€ gesetzt.`; G.say(msg);
+    G.save(); await sync({ ackSet: v, ackPending: r.me.pending || 0 });
+    r.me.pending = 0;
+  }
   if (r.me && r.me.pending) {
     const p = r.me.pending;
     S.m = Math.max(0, S.m + p);
@@ -321,10 +329,12 @@ async function act(a, v, el) {
       await poll(true); admin = null; break;
     }
     case 'ad': {
-      const amt = Math.abs(+$('#amt').value || 0), x = el.dataset.x;
-      const body = x === 'give' || x === 'take' ? { target: v, act: 'money', amount: x === 'give' ? amt : -amt } : { target: v, act: x };
+      const inp = [...document.querySelectorAll('.pamt')].find(i => i.dataset.p === v);
+      const amt = Math.abs(Math.trunc(+(inp && inp.value) || 0)), x = el.dataset.x;
+      if ((x === 'give' || x === 'take') && !amt) { msg = 'Betrag eingeben.'; break; }
+      const body = x === 'give' || x === 'take' ? { target: v, act: 'money', amount: x === 'give' ? amt : -amt } : x === 'set' ? { target: v, act: 'setmoney', amount: amt } : { target: v, act: x };
       const r = await call('admin_act', body);
-      msg = r.ok ? `✅ ${v}: ${x === 'give' ? '+' + amt + '€' : x === 'take' ? '−' + amt + '€' : x === 'ban' ? 'gebannt' : 'entbannt'}` : r.error;
+      msg = r.ok ? `✅ ${v}: ${x === 'give' ? '+' + amt + '€' : x === 'take' ? '−' + amt + '€' : x === 'set' ? 'Geld auf ' + amt + '€ gesetzt' : x === 'ban' ? 'gebannt' : 'entbannt'}` : r.error;
       admin = null; break;
     }
   }

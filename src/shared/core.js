@@ -119,17 +119,18 @@ export function handle(db, mem, req, now = Date.now(), rand = Math.random) {
         events: meta.events.map(e => publicEvent(e, now, name)),
         lottery: L ? { amount: L.amount, endAt: L.endAt, count: L.players.length, iJoined: !!(name && L.players.includes(name)) } : null,
         lastLottery: meta.last || [],
-        me: u ? { name, role: u.p.role, pending: u.p.pending || 0, banned: !!u.p.banned } : null,
+        me: u ? { name, role: u.p.role, pending: u.p.pending || 0, setMoney: u.p.setMoney ?? null, banned: !!u.p.banned } : null,
       });
     }
 
     case 'save': {
       const e = needUser(); if (e) return e;
       const p = u.p;
-      for (const k of ['money', 'shifts']) if (Number.isFinite(b[k])) p[k] = Math.max(0, Math.floor(b[k]));
+      for (const k of ['money', 'shifts']) if (Number.isFinite(b[k]) && !(k === 'money' && p.setMoney != null && b.ackSet == null)) p[k] = Math.max(0, Math.floor(b[k]));
       if (typeof b.rank === 'string') p.rank = b.rank.slice(0, 24);
       if (typeof b.skin === 'string') p.skin = b.skin.slice(0, 24);
-      if (Number.isFinite(b.ackPending) && b.ackPending > 0) p.pending = Math.max(0, (p.pending || 0) - b.ackPending);
+      if (Number.isFinite(b.ackPending) && b.ackPending !== 0) p.pending = (p.pending || 0) - b.ackPending;
+      if (b.ackSet != null && p.setMoney === b.ackSet) delete p.setMoney;
       p.seen = now;
       P(db, 'p:' + u.name, p); updateIndex(db, u.name, p);
       if (b.data && typeof b.data === 'object') {
@@ -164,6 +165,11 @@ export function handle(db, mem, req, now = Date.now(), rand = Math.random) {
           const a = Math.trunc(Number(b.amount));
           if (!Number.isFinite(a) || a === 0) return err('Betrag fehlt.');
           p.pending = (p.pending || 0) + a; break;
+        }
+        case 'setmoney': {
+          const a = Math.trunc(Number(b.amount));
+          if (!Number.isFinite(a) || a < 0) return err('Betrag muss 0 oder mehr sein.');
+          p.setMoney = a; p.pending = 0; p.money = a; break;
         }
         case 'role': {
           if (!['player', 'op', 'admin'].includes(b.role)) return err('Unbekannte Rolle.');

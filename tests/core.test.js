@@ -86,6 +86,23 @@ describe('Admin', () => {
     call('admin_act', { target: 'Mia', act: 'role', role: 'op' }, adm);
     expect(call('state', {}, mia).body.me.pending).toBe(OP_BONUS);
   });
+  it('Geld abziehen wird quittiert und nicht doppelt abgezogen', () => {
+    call('admin_act', { target: 'Mia', act: 'money', amount: -300 }, adm);
+    expect(call('state', {}, mia).body.me.pending).toBe(-300);
+    call('save', { ackPending: -300 }, mia);
+    expect(call('state', {}, mia).body.me.pending).toBe(0);
+  });
+  it('Geld auf eine genaue Summe setzen', () => {
+    call('admin_act', { target: 'Mia', act: 'money', amount: 999 }, adm);
+    expect(call('admin_act', { target: 'Mia', act: 'setmoney', amount: -5 }, adm).body.ok).toBe(false);
+    call('admin_act', { target: 'Mia', act: 'setmoney', amount: 1234 }, adm);
+    const me = call('state', {}, mia).body.me;
+    expect(me).toMatchObject({ setMoney: 1234, pending: 0 });
+    call('save', { money: 50 }, mia); // alter Stand vom Gerät überschreibt den gesetzten Wert nicht
+    expect(call('admin_players', {}, adm).body.players.find(p => p.name === 'Mia').money).toBe(1234);
+    call('save', { money: 1234, ackSet: 1234 }, mia);
+    expect(call('state', {}, mia).body.me.setMoney).toBeNull();
+  });
   it('allen Spielern Geld geben (gebannte nicht), nur Admins dürfen das', () => {
     const ben = login('Ben').token;
     call('admin_act', { target: 'Ben', act: 'ban' }, adm);
