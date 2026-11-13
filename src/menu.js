@@ -360,7 +360,13 @@ async function act(a, v, el) {
     case 'evtest': {
       if (S.role !== 'admin') return;
       const type = +v;
-      G.playEvent(type, aborted => showMenu(aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig. (Keine Belohnung im Testmodus.)`), { test: true });
+      G.playEvent(type, aborted => {
+        // Skin-Belohnung gibt es für jeden, der das Event spielt – auch im Test
+        const sk = STORY[type - 1].skin;
+        let extra = '';
+        if (sk && !S.skins.includes(sk)) { S.skins.push(sk); G.save(); sync(); extra = ` 🎁 Gratis-Skin: ${SKIN[sk].name}!`; }
+        showMenu((aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig. (Kein Geld und keine Waffe im Testmodus.)`) + extra);
+      }, { test: true });
       return;
     }
     case 'evplay': { const e = ST && ST.events.find(x => x.id === v); if (e) startLive(e); return; }
