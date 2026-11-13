@@ -353,13 +353,17 @@ export const G = {
     say('Willkommen, ' + S.name + '. Die Nachtschicht beginnt.' + (S.lobby ? ' Lobby ' + S.lobby + ': Deine Freunde sind mit dir in der Welt.' : ''));
   },
   /** Live-Event abspielen (Cutscene), danach done() */
-  playEvent(type, done) {
+  playEvent(type, done, opt = {}) {
     if (S.ph == 'play' || S.ph == 'bus') saveP();
     document.querySelector('#menu').classList.add('hide');
     $('#ov').className = 'hide'; $('#qt').className = 'hide';
     S.ph = 'event'; S.map = 'tank'; S.c = null; S.th = null; S.boss = null; S.mon = false; S.cam = 0;
     R();
-    SC.ev.start(type, () => { S.ph = 'menu'; R(); done(); });
+    const skip = $('#evskip');
+    skip.classList.toggle('hide', !opt.test);
+    let aborted = false;
+    skip.onclick = () => { aborted = true; $('#task').style.display = 'none'; SC.ev.stop(); };
+    SC.ev.start(type, () => { skip.classList.add('hide'); S.ph = 'menu'; R(); done(aborted); });
   },
 };
 

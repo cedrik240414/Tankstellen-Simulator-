@@ -184,7 +184,7 @@ function lobbyView() {
 function adminView() {
   if (!admin) { loadAdmin(); return '<div class=card><p>Lade Spieler …</p></div>'; }
   const roleName = r => (r === 'admin' ? '🛡️ Admin' : r === 'op' ? '⭐ OP' : 'Spieler');
-  return `<div class=card><h3>🌍 Alle Spieler auf einmal</h3><p class=mu>Gilt für alle ${admin.filter(p => !p.banned).length} nicht gebannten Spieler (auch dich).</p>
+  return evTestView() + `<div class=card><h3>🌍 Alle Spieler auf einmal</h3><p class=mu>Gilt für alle ${admin.filter(p => !p.banned).length} nicht gebannten Spieler (auch dich).</p>
     <div class=btns><input id=allamt type=number value=500 min=1 style="max-width:160px"> €<button class=red data-m=adall data-x=give>🎁 Allen Geld geben</button><button data-m=adall data-x=take>➖ Allen Geld abziehen</button></div></div>
     <div class=card><h3>🛡️ Alle Spieler (${admin.length})</h3>
     <div class=btns><input id=adsearch placeholder="🔍 Spieler suchen" autocomplete=off><button data-m=adrefresh>🔄 Neu laden</button></div>
@@ -196,6 +196,12 @@ function adminView() {
         ${p.role === 'admin' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>Admin wegnehmen</button>` : `<button class=hl data-m=adr data-v="${esc(p.name)}" data-x=admin>🛡️ Admin geben</button>`}
         ${p.role === 'op' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=player>OP wegnehmen</button>` : p.role === 'player' ? `<button data-m=adr data-v="${esc(p.name)}" data-x=op>⭐ OP geben</button>` : ''}`) + '</td></tr>').join('')
     + '</table></div>';
+}
+/** Admin: jedes Event sofort ansehen, ohne Belohnung und ohne andere Spieler */
+function evTestView() {
+  return `<div class=card><h3>🧪 Events testen</h3><p class=mu>Spielt das Event sofort nur für dich ab. Keine Belohnung, nichts wird gespeichert, andere Spieler merken nichts. Mit ⏹ kannst du jederzeit abbrechen.</p><div class=grid>`
+    + STORY.map((e, i) => `<div class=skin><div class=se>${['☄️', '🛸', '📻', '👤', '🌀', '💭', '🏚️', '🌗', '🎭', '🌌', '🔋', '👁️', '🔑', '⚔️', '❓'][i]}</div><b>${i + 1}. ${esc(e.t)}</b><small class=mu>${e.task ? '🎮 mit Aufgabe' : '🎬 nur Cutscene'}${e.reward ? ' · 🔫 Waffe' : ''}</small><button class=red data-m=evtest data-v=${i + 1}>▶ Testen</button></div>`).join('')
+    + `</div><p class=mu>Den ganzen Ablauf (Countdown → 10 Min. Beitritt → Live) testest du unter 🎉 Events mit einem Event „in 1 Minute“.</p></div>`;
 }
 async function loadAdmin() {
   const r = await call('admin_players');
@@ -321,6 +327,12 @@ async function act(a, v, el) {
     case 'buyrank': { const r = RANK[v]; if (!r || S.ranks.includes(v) || S.m < r.price) return; S.m -= r.price; S.ranks.push(v); S.rank = v; msg = `Rang ${r.emoji} ${r.name} gekauft!`; G.save(); sync(); break; }
     case 'rank': if (v && !S.ranks.includes(v)) return; S.rank = v; G.save(); sync(); break;
     case 'evjoin': { const r = await call('event_join', { id: v }); msg = r.ok ? '✅ Beigetreten! Das Live-Event startet nach dem Beitritts-Timer.' : r.error; await poll(true); break; }
+    case 'evtest': {
+      if (S.role !== 'admin') return;
+      const type = +v;
+      G.playEvent(type, aborted => showMenu(aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig. (Keine Belohnung im Testmodus.)`), { test: true });
+      return;
+    }
     case 'evplay': { const e = ST && ST.events.find(x => x.id === v); if (e) startLive(e); return; }
     case 'evdel': await call('admin_event_delete', { id: v }); await poll(true); break;
     case 'evcreate': {

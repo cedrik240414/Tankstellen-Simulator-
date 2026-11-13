@@ -290,7 +290,7 @@ export function createPlayer(api) {
     if (i >= shots.length) {
       if (ev.task && !taskOpen && !ev._taskDone) {
         taskOpen = true;
-        api.ui.task(ev.task, () => { if (ev._taskDone) return; ev._taskDone = true; taskOpen = false; shots = shots.concat(ev.after || []); next(); });
+        api.ui.task(ev.task, () => { if (ev._taskDone || !active) return; ev._taskDone = true; taskOpen = false; shots = shots.concat(ev.after || []); next(); });
         return;
       }
       return finish();

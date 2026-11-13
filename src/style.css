@@ -100,3 +100,5 @@ label{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .evbanner .red,.evbanner button{font-size:20px;padding:12px 22px}
 .evbm{color:#c8b8e8;margin-top:4px}
 .evsmall{flex-basis:100%;font:800 16px system-ui,sans-serif;color:#ffe060;background:#2a0a3a;border:1px solid #a040ff;border-radius:6px;padding:6px 10px;text-align:center}
+#evskip{position:absolute;right:10px;top:10px;z-index:8;background:#5a1712;border:2px solid #ff6060;font-weight:bold}
+#fp:not(.cut) #evskip{display:none}
