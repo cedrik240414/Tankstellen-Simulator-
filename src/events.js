@@ -17,8 +17,10 @@ export const STORY = [
     sh('Ein Meteor rast vom Himmel und schlägt direkt vor der Tankstelle ein!', [-30, 3, 22], [-28, 5, 20], [-12, 2, 10], 5, ['meteor']),
     sh('Aus dem Krater steigt eine leuchtende Kugel: der DARK POINT.', [-20, 2, 16], [-17, 1.8, 14], [-12, 1.2, 10], 5, ['orb']),
     sh('Eine mysteriöse maskierte Gestalt taucht auf und greift nach dem Dark Point …', [-18, 2, 15], [-16, 2, 13], [-10, 1.2, 10], 6, ['orb', 'figure']),
-    sh('Du stellst dich ihr in den Weg. Die Gestalt verletzt sich und fliegt davon.', [-16, 2, 13], [-15, 3, 12], [-9, 3, 10], 5, ['orb', 'figureFly']),
-    sh('Du nimmst den Dark Point an dich.', [-14, 1.8, 11.5], [-13, 1.6, 10.8], [-12, 1.2, 10], 4, ['orb']),
+    sh('Du stellst dich ihr in den Weg und greifst nach dem Dark Point – er gibt dir seine Kraft!', [-14, 1.8, 11.5], [-13, 1.6, 10.8], [-12, 1.2, 10], 5, ['orb', 'figure']),
+  ], task: { shoot: 'masked', text: '🥷 Besiege die maskierte Gestalt! Schieß auch ihre Energiekugeln ab!', n: 30, time: 90 }, after: [
+    sh('Die Gestalt ist verletzt und fliegt davon.', [-16, 2, 13], [-15, 3, 12], [-9, 3, 10], 5, ['figureFly']),
+    sh('Der Dark Point gehört jetzt dir.', [-14, 1.8, 11.5], [-13, 1.6, 10.8], [-12, 1.2, 10], 4, ['orb']),
   ], reward: 'blade' },
   { t: 'The New Visitors', abduct: true, shots: [
     sh('Am nächsten Abend wollen alle Kunden plötzlich nach draußen.', OUT, [-24, 4, 16], SHOP, 4),

@@ -66,14 +66,26 @@ export function createShooter(api, cfg, onDone) {
     root.add(g); enemies.push(g);
   }
 
-  V.yaw = START_YAW; V.pit = cfg.horde ? -0.05 : cfg.shoot === 'swarm' ? 0.5 : cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
+  if (cfg.shoot === 'masked') {
+    // Bosskampf gegen die schwarz maskierte Gestalt
+    const g = skinModel(THREE, 'maskiert');
+    g.scale.setScalar(1.15);
+    g.position.set(-26, 0, 10);
+    const aura = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), bas(0x9a40ff, 0.22)); aura.scale.set(0.8, 1.6, 0.6); aura.position.y = 1.0; g.add(aura);
+    const gl = new THREE.PointLight(0xb060ff, 2.2, 9); gl.position.set(0, 2.2, 0.8); g.add(gl);
+    g.userData.kind = 'masked'; g.userData.tp = 3.5; g.userData.at = 2.2; g.userData.hit = 0; g.userData.goal = null;
+    root.add(g); enemies.push(g);
+  }
+  const isBoss = cfg.shoot === 'boss' || cfg.shoot === 'masked';
+
+  V.yaw = START_YAW; V.pit = cfg.shoot === 'masked' ? 0 : cfg.horde ? -0.05 : cfg.shoot === 'swarm' ? 0.5 : cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
   ui.shooting(true);
   hud();
 
   function hud() {
     const left = Math.max(0, Math.ceil(cfg.time - t));
-    const goal = cfg.shoot === 'boss'
-      ? `Boss <span class=bossbar><i style="width:${Math.max(0, bossHp / cfg.n * 100)}%"></i></span>`
+    const goal = isBoss
+      ? `${cfg.shoot === 'masked' ? 'Maskierte Gestalt' : 'Boss'} <span class=bossbar><i style="width:${Math.max(0, bossHp / cfg.n * 100)}%"></i></span>`
       : `🎯 ${kills}/${cfg.n}`;
     ui.shootHud(`<b>${cfg.text}</b><br>${goal} · ⏱️ ${left}s · ${'❤️'.repeat(Math.max(0, hp))}${hp <= 0 ? ' 💀' : ''}`);
   }
@@ -126,7 +138,7 @@ export function createShooter(api, cfg, onDone) {
         if (e.userData.kind === 'alien' || e.userData.kind === 'swarm') c.y += 1.0;
         const dir = c.clone().sub(rc.ray.origin), d = dir.length();
         let a;
-        if (e.userData.kind === 'alien') {
+        if (e.userData.kind === 'alien' || e.userData.kind === 'masked') {
           // Gegner am Boden: nur die Richtung links/rechts zählt, die Höhe zielt automatisch
           const rd = rc.ray.direction;
           a = Math.abs(Math.atan2(dir.x, dir.z) - Math.atan2(rd.x, rd.z));
@@ -143,7 +155,10 @@ export function createShooter(api, cfg, onDone) {
       to = hits[0].point;
       const e = enemyOf(hits[0].object);
       if (e) {
-        if (e.userData.kind === 'boss') { bossHp--; burst(to, 0xff4040); if (bossHp <= 0) { kills = cfg.n; win(); } }
+        if (e.userData.kind === 'boss' || e.userData.kind === 'masked') {
+          bossHp--; e.userData.hit = 0.15; burst(to, e.userData.kind === 'masked' ? 0xa040ff : 0xff4040);
+          if (bossHp <= 0) { kills = cfg.n; e.userData.flee = true; win(); }
+        }
         else {
           e.userData.hp--; e.userData.hit = 0.15;
           if (e.userData.hp <= 0) { kills++; burst(e.getWorldPosition(tmp2.clone()).setY(to.y), 0xb050ff); root.remove(e); enemies.splice(enemies.indexOf(e), 1); if (kills >= cfg.n) win(); }
@@ -163,7 +178,7 @@ export function createShooter(api, cfg, onDone) {
   function win() {
     if (ended) return;
     ended = true;
-    ui.shootHud(`<b>✅ Geschafft! ${cfg.shoot === 'boss' ? 'Die Kreatur ist besiegt!' : kills + ' Gegner erledigt!'}</b>`);
+    ui.shootHud(`<b>✅ Geschafft! ${cfg.shoot === 'masked' ? 'Die maskierte Gestalt ist verletzt und flieht!' : cfg.shoot === 'boss' ? 'Die Kreatur ist besiegt!' : kills + ' Gegner erledigt!'}</b>`);
     setTimeout(stop, 1600);
   }
   function timeUp() {
@@ -214,6 +229,35 @@ export function createShooter(api, cfg, onDone) {
         e.rotation.y += dt * 2;
         continue;
       }
+      if (u.kind === 'masked') {
+        if (u.flee) { e.position.y += dt * 5; e.rotation.y += dt * 6; continue; }
+        if (ended) continue;
+        u.tp -= dt; u.at -= dt;
+        if (u.tp <= 0) { // Teleport
+          burst(e.position.clone().setY(1.2), 0x30103a);
+          e.position.set(-29 + Math.random() * 7, 0, 3 + Math.random() * 14);
+          burst(e.position.clone().setY(1.2), 0x6020a0);
+          u.tp = 3 + Math.random() * 1.5; u.goal = null;
+        }
+        if (!u.goal || e.position.distanceTo(u.goal) < 0.3) u.goal = new THREE.Vector3(-29 + Math.random() * 7, 0, 3 + Math.random() * 14);
+        tmp.copy(u.goal).sub(e.position);
+        const l = tmp.length();
+        if (l > 0.01) e.position.add(tmp.normalize().multiplyScalar(Math.min(l, 4.5 * dt)));
+        e.lookAt(POS.x, 0, POS.z);
+        const a = Math.sin(t * 10) * 0.6; u.lg.rotation.x = a; u.rg.rotation.x = -a; u.la.rotation.x = -a;
+        u.ra.rotation.x = u.at < 0.4 ? -2.6 : a;
+        if (u.at <= 0) { // dunkle Energiekugel werfen
+          u.at = 2 + Math.random() * 1.2;
+          const pr = new THREE.Group();
+          pr.add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), bas(0x0a0010)));
+          pr.add(new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), bas(0xa040ff, 0.35)));
+          pr.position.copy(e.position).add(new THREE.Vector3(0, 1.9, 0));
+          pr.userData = { kind: 'proj', hp: 1, sp: 4.2, wob: 0, hit: 0 };
+          root.add(pr); enemies.push(pr);
+        }
+        if (u.hit > 0) { u.hit -= dt; e.visible = Math.floor(u.hit * 40) % 2 === 0; } else e.visible = true;
+        continue;
+      }
       if (u.kind === 'boss') {
         const d = POS.x - e.position.x; // Abstand zum Spieler
         if (!ended && d > 9) e.position.x += dt * 1.1;
@@ -221,13 +265,13 @@ export function createShooter(api, cfg, onDone) {
         if (!ended && d <= 9.5 && hurtT <= 0) { hurt(); }
         continue;
       }
-      const fly = u.kind === 'flyer' || u.kind === 'swarm';
+      const fly = u.kind === 'flyer' || u.kind === 'swarm' || u.kind === 'proj';
       tmp.set(POS.x - e.position.x, (fly ? POS.y + (u.kind === 'swarm' ? 0.4 : 0) : 0) - e.position.y, POS.z - e.position.z);
       const dist = tmp.length();
       if (dist > 1.3 && !ended) {
         tmp.normalize().multiplyScalar(u.sp * dt);
         e.position.add(tmp);
-        if (fly) { e.position.y += Math.sin(t * 4 + u.wob) * dt; e.position.x += Math.cos(t * 3 + u.wob) * dt * 0.8; }
+        if (fly && u.kind !== 'proj') { e.position.y += Math.sin(t * 4 + u.wob) * dt; e.position.x += Math.cos(t * 3 + u.wob) * dt * 0.8; }
         e.lookAt(POS.x, e.position.y, POS.z);
         if (e.userData.lg) { const a = Math.sin(t * 9 + u.sp) * 0.6; e.userData.lg.rotation.x = a; e.userData.rg.rotation.x = -a; e.userData.la.rotation.x = -a; e.userData.ra.rotation.x = a; }
       } else if (!ended) { hurt(); gone.push(e); burst(e.position.clone().setY(1.2), 0x40ff60); }
