@@ -22,7 +22,7 @@ export const STORY = [
     sh('Die Gestalt ist verletzt und fliegt davon.', [-16, 2, 13], [-15, 3, 12], [-9, 3, 10], 5, ['figureFly']),
     sh('Der Dark Point gehört jetzt dir.', [-14, 1.8, 11.5], [-13, 1.6, 10.8], [-12, 1.2, 10], 4, ['orb']),
   ], reward: 'blade', skin: 'maskiert', every: 2, adminGets: true },
-  { t: 'The New Visitors', abduct: true, shots: [
+  { t: 'The New Visitors', shots: [
     sh('Am nächsten Abend wollen alle Kunden plötzlich nach draußen.', OUT, [-24, 4, 16], SHOP, 4),
     sh('Ein riesiges Raumschiff erscheint über der Tankstelle!', OUT, [-28, 2, 20], [0, 12, 0], 6, ['ship']),
     sh('Eine Gruppe Aliens kommt aus dem Raumschiff.', [-20, 2, 14], [-18, 2, 12], [-10, 1, 9], 5, ['ship', 'aliens']),
@@ -78,13 +78,13 @@ export const STORY = [
     sh('Plötzlich wird sie von einem dunklen Strahl weggezogen …', [-15, 2, 13], [-16, 3, 14], [-10, 4, 10], 4, ['figureFly', 'dark']),
     sh('Ihr seht nur noch ihre Maske am Boden.', [-11, 1, 11], [-10.6, 0.7, 10.6], [-10, 0.1, 10], 4, ['maskOnly']),
   ] },
-  { t: 'The Portal', abduct: true, shots: [
+  { t: 'The Portal', shots: [
     sh('Über der Tankstelle öffnet sich ein riesiges Portal.', OUT, [-28, 2, 20], [0, 12, -10], 5, ['portal']),
     sh('Ein gewaltiges Raumschiff kommt aus dem Portal.', OUT, [-30, 3, 22], [0, 12, 0], 6, ['portal', 'ship']),
-    sh('Im Inneren: hunderte kleine Lichter. Eine Stimme: „Die Erde wurde gefunden.“', [300, 2, 308], [300, 3, 304], [300, 2, 296], 6, ['shipInside']),
+    sh('Am Raumschiff leuchten hunderte kleine Lichter. Eine Stimme: „Die Erde wurde gefunden.“', [-14, 2, 12], [-12, 1.6, 10], [0, 12, 0], 6, ['portal', 'ship']),
     sh('Eine ganze Flotte von Raumschiffen fliegt auf die Erde zu.', [0, 20, 40], [0, 25, 30], [0, 30, -60], 6, ['fleet']),
   ], reward: 'laser' },
-  { t: 'The Last Defense', abduct: true, shots: [
+  { t: 'The Last Defense', shots: [
     sh('Die Aliens greifen erneut an – diesmal viel stärker.', OUT, [-28, 3, 20], [0, 10, 0], 5, ['ship', 'fleet', 'aliens']),
     sh('Die Tankstelle wird beschädigt, überall Explosionen!', [-20, 3, 14], [-18, 4, 12], SHOP, 5, ['explode', 'aliens', 'flicker']),
   ], task: { shoot: 'aliens', fast: true, text: '👽 Die Aliens greifen stärker an! Halte sie auf!', n: 35, time: 95 }, after: [
@@ -326,10 +326,6 @@ export function createPlayer(api) {
     start(type, done) {
       ev = { ...STORY[type - 1] };
       shots = [];
-      if (ev.abduct) shots.push(
-        sh('Ein Raumschiff erscheint über dem Laden …', OUT, [-28, 2, 20], [-4, 12, 0], 5, ['ship']),
-        sh('Ein Lichtstrahl erfasst dich – du wirst eingesogen!', [-4, 1.6, 2], [-4, 11, 0.5], [-4, 14, 0], 4, ['ship'], 'flashEnd'),
-      );
       shots = shots.concat(ev.shots);
       i = -1; T = 0; active = true; onEnd = done;
       api.ui.title(`EVENT ${type}: ${ev.t.toUpperCase()}`);
