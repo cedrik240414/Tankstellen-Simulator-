@@ -14,7 +14,7 @@ import { G } from './game.js';
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hex = n => '#' + (n >>> 0).toString(16).padStart(6, '0');
-let tab = 'play', ST = null, srvOff = 0, admin = null, lobby = null, msg = '', busy = false, lastStateJson = '';
+let lastEvKey = '', tab = 'play', ST = null, srvOff = 0, admin = null, lobby = null, msg = '', busy = false, lastStateJson = '';
 const now = () => Date.now() + srvOff;
 export const lobbyState = () => lobby;
 
@@ -75,7 +75,7 @@ function render() {
   const m = $('#mcontent');
   if (!S || !S.name) { $('#mhead').innerHTML = '<h2 class=mtitle>⛽ Tankstellen Simulator</h2>'; $('#mtabs').innerHTML = ''; m.innerHTML = loginView(); $('#prev').style.display = 'none'; return; }
   const role = S.role;
-  $('#mhead').innerHTML = `<h2 class=mtitle>⛽ Tankstellen Simulator</h2><div class=who><b>${esc(displayName(S.name, S.rank, role))}</b> · 💶 ${S.m}€ · ${role === 'admin' ? 'Admin' : role === 'op' ? 'OP' : 'Spieler'} ${online ? '🌐' : '📴'}</div>`;
+  $('#mhead').innerHTML = `<h2 class=mtitle>⛽ Tankstellen Simulator</h2><div class=who><b>${esc(displayName(S.name, S.rank, role))}</b> · 💶 ${S.m}€ · ${role === 'admin' ? 'Admin' : role === 'op' ? 'OP' : 'Spieler'} ${online ? '🌐' : '📴'}</div>` + eventBanner(false);
   $('#mtabs').innerHTML = TABS.concat(role === 'admin' ? [['admin', '🛡️ Admin']] : []).map(([k, n]) => `<button class="${tab === k ? 'hl' : ''}" data-m=tab data-v=${k}>${n}</button>`).join('') + '<button data-m=logout>🚪 Abmelden</button>';
   const views = { play: playView, rang: rangView, skins: skinsView, shop: shopView, ranks: ranksView, events: eventsView, lotto: lottoView, lobby: lobbyView, admin: adminView };
   m.innerHTML = (msg ? `<p class=lk>${esc(msg)}</p>` : '') + (views[tab] || playView)();
@@ -122,6 +122,26 @@ function ranksView() {
       return `<div class=skin><div class=se>${r.emoji}</div><b>${r.name}</b>${owned ? (S.rank === r.id ? '<button class=hl data-m=rank data-v="">✓ Aktiv (ablegen)</button>' : `<button data-m=rank data-v=${r.id}>Anzeigen</button>`) : `<button data-m=buyrank data-v=${r.id} ${S.m < r.price ? 'disabled' : ''}>${r.price}€</button>`}</div>`;
     }).join('') + '</div></div>';
 }
+/** großes Banner mit dem nächsten Event (oben im Menü, klein auch im Spiel) */
+const DAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+function when(t) {
+  const d = new Date(t - srvOff), today = new Date(), tm = new Date(today.getTime() + 86400000);
+  const same = (a, b) => a.toDateString() === b.toDateString();
+  const day = same(d, today) ? 'Heute' : same(d, tm) ? 'Morgen' : `${DAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
+  return `${day} um ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} Uhr`;
+}
+export function eventBanner(small) {
+  const evs = ((ST && ST.events) || []).filter(e => e.phase !== 'done');
+  if (!evs.length) return '';
+  const e = evs[0], name = esc(EVENT_TITLES[e.type - 1]) + (e.title ? ' – ' + esc(e.title) : '');
+  let line;
+  if (e.phase === 'countdown') line = `📅 ${when(e.startAt)} · Beitritt in <b data-cd=${e.startAt}></b>`;
+  else if (e.phase === 'join') line = e.iJoined ? `✅ Du bist dabei! Live in <b data-cd=${e.startAt + EVENT_JOIN_MS}></b>` : `🚪 JETZT BEITRETEN! Noch <b data-cd=${e.startAt + EVENT_JOIN_MS}></b>`;
+  else line = '🔴 DAS EVENT LÄUFT GERADE LIVE!';
+  if (small) return `<span class=evsmall>🎉 ${name}: ${line}</span>`;
+  const btn = e.phase === 'join' && !e.iJoined ? `<button class=red data-m=evjoin data-v=${e.id}>Beitreten</button>` : `<button data-m=tab data-v=events>Zu den Events</button>`;
+  return `<div class="evbanner ${e.phase}"><div class=evbt>🎉 EVENT: ${name}</div><div class=evbw>${line}</div>${btn}${evs.length > 1 ? `<div class=evbm>+ ${evs.length - 1} weitere${evs.length > 2 ? '' : 's'} Event${evs.length > 2 ? 's' : ''} geplant</div>` : ''}</div>`;
+}
 const phaseText = e => ({ countdown: '⏳ Startet in', join: '🚪 Beitritt offen, Live-Event in', live: '🔴 LIVE', done: '✔️ Vorbei' }[e.phase]);
 function eventsView() {
   const evs = (ST && ST.events) || [];
@@ -129,7 +149,7 @@ function eventsView() {
   if (!evs.length) h += '<p class=mu>Gerade ist kein Event geplant.</p>';
   for (const e of evs) {
     const cd = e.phase === 'countdown' ? e.startAt : e.phase === 'join' ? e.startAt + EVENT_JOIN_MS : 0;
-    h += `<div class=ev><b>${esc(EVENT_TITLES[e.type - 1])}</b>${e.title ? ' – ' + esc(e.title) : ''}<br>${phaseText(e)} ${cd ? `<b data-cd=${cd}></b>` : ''} · 👥 ${e.joined}<br>`
+    h += `<div class=ev><b>${esc(EVENT_TITLES[e.type - 1])}</b>${e.title ? ' – ' + esc(e.title) : ''}<br>📅 ${when(e.startAt)}<br>${phaseText(e)} ${cd ? `<b data-cd=${cd}></b>` : ''} · 👥 ${e.joined}<br>`
       + (e.phase === 'join' ? (e.iJoined ? '<span class=ok>✅ Du bist dabei!</span>' : `<button class=red data-m=evjoin data-v=${e.id}>Beitreten</button>`) : '')
       + (e.phase === 'live' && e.iJoined && !S.evDone.includes(e.id) ? `<button class=red data-m=evplay data-v=${e.id}>▶ Live-Event ansehen</button>` : '')
       + (S.role === 'admin' ? ` <button data-m=evdel data-v=${e.id}>🗑️</button>` : '') + '</div>';
@@ -246,6 +266,9 @@ export async function poll(force) {
   // Live-Event starten, wenn man beigetreten ist
   const live = r.events.find(e => e.phase === 'live' && e.iJoined && !S.evDone.includes(e.id));
   if (live && S.ph !== 'event' && !G.busy()) return startLive(live);
+  const evKey = JSON.stringify(r.events.map(e => [e.id, e.phase, e.iJoined]));
+  if (evKey !== lastEvKey && (S.ph === 'play' || S.ph === 'bus')) G.redraw();
+  lastEvKey = evKey;
   const j = JSON.stringify([r.leaderboard, r.events, r.lottery, r.lastLottery, S.m]);
   const typing = document.activeElement && /INPUT|SELECT/.test(document.activeElement.tagName) && $('#menu').contains(document.activeElement);
   if ((force || j !== lastStateJson) && !$('#menu').classList.contains('hide') && !typing) render();

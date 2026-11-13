@@ -157,7 +157,7 @@ function idsay(c) {
 export function R() {
   if (!S) return;
   const hpPct = Math.max(0, (S.hp / hpMax()) * 100);
-  $('#hud').innerHTML = `<button data-a=menu>🏠 Menü</button><span id="clk"></span><span>👤 ${S.name || '?'}${S.adm ? ' 👑' : ''}${S.lobby ? ' · 👥 ' + S.lobby + ' (' + (S.others.length + 1) + ')' : ''}</span>`
+  $('#hud').innerHTML = (hooks.evBanner ? hooks.evBanner(true) : '') + `<button data-a=menu>🏠 Menü</button><span id="clk"></span><span>👤 ${S.name || '?'}${S.adm ? ' 👑' : ''}${S.lobby ? ' · 👥 ' + S.lobby + ' (' + (S.others.length + 1) + ')' : ''}</span>`
     + (S.adm ? '<button data-a=gm data-v=100>+100€</button><button data-a=gm data-v=1000>+1000€</button><button data-a=gh data-v=s>💀+1</button><button data-a=gh data-v=a>🐶+1</button>' : '')
     + `<span>💶 ${S.m}€</span><span class=hb><i style='width:${hpPct}%'></i></span>`
     + `<span>${S.map == 'pizza' ? '🐶 ' + S.ah + '/' + HEADS_TOTAL : '💀 ' + (S.sk || 0) + '/' + SKULLS_TOTAL}</span><span>☠️ ${S.sc}/${MAX_MISTAKES}</span><span>😠 ${S.bw}/${MAX_COMPLAINTS}</span><span>🎒 ${[0, 1].map(i => (S.inv[i] ? '📦' : '▫️')).join('')}</span>`;
@@ -338,6 +338,7 @@ function goMenu(m) {
 export const G = {
   store, say, hooks,
   save: () => saveP(),
+  redraw: () => R(),
   reload: () => loadP(),
   busy: () => S && S.ph == 'event',
   async newSession(name, role) { init(); S.name = name; S.role = role; S.adm = role == 'admin'; loadP(); S.hp = hpMax(); S.ph = 'menu'; R(); },
