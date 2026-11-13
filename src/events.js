@@ -313,6 +313,7 @@ export function createPlayer(api) {
   }
   function finish() {
     active = false;
+    taskOpen = false;
     if (shooter) { shooter.abort(); shooter = null; }
     setProps([]);
     api.ui.caption('');
@@ -327,7 +328,9 @@ export function createPlayer(api) {
       ev = { ...STORY[type - 1] };
       shots = [];
       shots = shots.concat(ev.shots);
-      i = -1; T = 0; active = true; onEnd = done;
+      i = -1; T = 0; active = true; onEnd = done; taskOpen = false;
+      if (shooter) { shooter.abort(); shooter = null; }
+      setProps([]);
       api.ui.title(`EVENT ${type}: ${ev.t.toUpperCase()}`);
       next();
     },
