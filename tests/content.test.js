@@ -67,13 +67,22 @@ describe('Events', () => {
   it('jedes Event hat Kameraeinstellungen mit Text', () => { for (const e of STORY) { expect(e.shots.length).toBeGreaterThan(1); for (const s of e.shots) expect(s.text).toBeTruthy(); } });
   it('Belohnung: Geld für alle, Waffe nur für ausgewählte Spieler (etwa jeder Dritte)', () => {
     let weapons = 0;
-    for (let i = 0; i < 300; i++) { const r = eventReward(1, 'e1', 'Spieler' + i); expect(r.money).toBe(300); if (r.weapon != null) { weapons++; expect(r.weapon).toBe(EV_WEAPON.blade); } }
+    for (let i = 0; i < 300; i++) { const r = eventReward(5, 'e1', 'Spieler' + i); expect(r.money).toBe(500); if (r.weapon != null) { weapons++; expect(r.weapon).toBe(EV_WEAPON.blaster); } }
     expect(weapons).toBeGreaterThan(60); expect(weapons).toBeLessThan(140);
     expect(eventReward(3, 'e9', 'x').weapon).toBeNull();
   });
   it('Event 1 schenkt allen Teilnehmern den Skin Schwarz Maskiert', () => {
     for (let i = 0; i < 30; i++) expect(eventReward(1, 'e1', 'Spieler' + i)).toMatchObject({ skin: 'maskiert', money: 300 });
     expect(eventReward(2, 'e2', 'x').skin).toBeNull();
+  });
+  it('Dark Blade bei Event 1: etwa jeder Zweite, Admins immer', () => {
+    let n = 0;
+    for (let i = 0; i < 400; i++) if (eventReward(1, 'e7', 'Spieler' + i, 'player').weapon === EV_WEAPON.blade) n++;
+    expect(n).toBeGreaterThan(150); expect(n).toBeLessThan(250);
+    for (let i = 0; i < 50; i++) expect(eventReward(1, 'e7', 'Admin' + i, 'admin').weapon).toBe(EV_WEAPON.blade);
+    // bei anderen Events haben Admins keinen Vorteil
+    let a = 0; for (let i = 0; i < 300; i++) if (eventReward(5, 'e8', 'Admin' + i, 'admin').weapon != null) a++;
+    expect(a).toBeLessThan(150);
   });
   it('Event-Waffen existieren', () => { for (const i of Object.values(EV_WEAPON)) expect(WEAPONS[i].lock).toBe('🔒 Event'); });
 });

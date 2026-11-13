@@ -323,7 +323,7 @@ export async function sync(extra = {}) {
 // ---------------------------------------------------------------- Live-Event
 function startLive(e) {
   G.playEvent(e.type, () => {
-    const rw = eventReward(e.type, e.id, S.name);
+    const rw = eventReward(e.type, e.id, S.name, S.role);
     S.m += rw.money;
     let t = `Event geschafft! +${rw.money}€`;
     if (rw.weapon != null && !S.own.includes(rw.weapon)) { S.own.push(rw.weapon); S.wi = rw.weapon; t += ` · Du wurdest ausgewählt: ${WEAPONS[rw.weapon].name}!`; }
@@ -362,12 +362,14 @@ async function act(a, v, el) {
       const type = +v;
       G.playEvent(type, aborted => {
         // Skin-Belohnung gibt es für jeden, der das Event spielt – auch im Test
-        const sk = STORY[type - 1].skin, money = eventReward(type, 'test', S.name).money;
+        const sk = STORY[type - 1].skin, rw = eventReward(type, 'test', S.name, S.role), money = rw.money;
         S.m += money;
         let extra = ` +${money}€`;
+        // Admins bekommen die Event-Waffe, wenn das Event sie Admins garantiert (Event 1: Dark Blade)
+        if (STORY[type - 1].adminGets && rw.weapon != null && !S.own.includes(rw.weapon)) { S.own.push(rw.weapon); S.wi = rw.weapon; extra += ` · 🔫 ${WEAPONS[rw.weapon].name}!`; }
         if (sk && !S.skins.includes(sk)) { S.skins.push(sk); extra += ` · 🎁 Gratis-Skin: ${SKIN[sk].name}!`; }
         G.save(); sync();
-        showMenu((aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig.`) + extra + ' (Waffen gibt es nur beim Live-Event.)');
+        showMenu((aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig.`) + extra + '');
       }, { test: true });
       return;
     }
