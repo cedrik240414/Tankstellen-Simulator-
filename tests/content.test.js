@@ -72,7 +72,7 @@ describe('Events', () => {
     expect(eventReward(3, 'e9', 'x').weapon).toBeNull();
   });
   it('Event 1 schenkt allen Teilnehmern den Skin Schwarz Maskiert', () => {
-    for (let i = 0; i < 30; i++) expect(eventReward(1, 'e1', 'Spieler' + i).skin).toBe('maskiert');
+    for (let i = 0; i < 30; i++) expect(eventReward(1, 'e1', 'Spieler' + i)).toMatchObject({ skin: 'maskiert', money: 300 });
     expect(eventReward(2, 'e2', 'x').skin).toBeNull();
   });
   it('Event-Waffen existieren', () => { for (const i of Object.values(EV_WEAPON)) expect(WEAPONS[i].lock).toBe('🔒 Event'); });

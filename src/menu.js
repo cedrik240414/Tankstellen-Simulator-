@@ -228,7 +228,7 @@ function adminView() {
 }
 /** Admin: jedes Event sofort ansehen, ohne Belohnung und ohne andere Spieler */
 function evTestView() {
-  return `<div class=card><h3>🧪 Events testen</h3><p class=mu>Spielt das Event sofort nur für dich ab. Keine Belohnung, nichts wird gespeichert, andere Spieler merken nichts. Mit ⏹ kannst du jederzeit abbrechen.</p><div class=grid>`
+  return `<div class=card><h3>🧪 Events testen</h3><p class=mu>Spielt das Event sofort nur für dich ab. Du bekommst Geld und Skins wie beim echten Event, Waffen gibt es nur live. Andere Spieler merken nichts. Mit ⏹ kannst du jederzeit abbrechen.</p><div class=grid>`
     + STORY.map((e, i) => `<div class=skin><div class=se>${['☄️', '🛸', '📻', '👤', '🌀', '💭', '🏚️', '🌗', '🎭', '🌌', '🔋', '👁️', '🔑', '⚔️', '❓'][i]}</div><b>${i + 1}. ${esc(e.t)}</b><small class=mu>${e.task ? '🎮 mit Aufgabe' : '🎬 nur Cutscene'}${e.reward ? ' · 🔫 Waffe' : ''}${e.skin ? ' · 👕 Skin' : ''}</small><button class=red data-m=evtest data-v=${i + 1}>▶ Testen</button></div>`).join('')
     + `</div><p class=mu>Den ganzen Ablauf (Countdown → 10 Min. Beitritt → Live) testest du unter 🎉 Events mit einem Event „in 1 Minute“.</p></div>`;
 }
@@ -362,10 +362,12 @@ async function act(a, v, el) {
       const type = +v;
       G.playEvent(type, aborted => {
         // Skin-Belohnung gibt es für jeden, der das Event spielt – auch im Test
-        const sk = STORY[type - 1].skin;
-        let extra = '';
-        if (sk && !S.skins.includes(sk)) { S.skins.push(sk); G.save(); sync(); extra = ` 🎁 Gratis-Skin: ${SKIN[sk].name}!`; }
-        showMenu((aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig. (Kein Geld und keine Waffe im Testmodus.)`) + extra);
+        const sk = STORY[type - 1].skin, money = eventReward(type, 'test', S.name).money;
+        S.m += money;
+        let extra = ` +${money}€`;
+        if (sk && !S.skins.includes(sk)) { S.skins.push(sk); extra += ` · 🎁 Gratis-Skin: ${SKIN[sk].name}!`; }
+        G.save(); sync();
+        showMenu((aborted ? `🧪 Test von Event ${type} abgebrochen.` : `🧪 Test von Event ${type} fertig.`) + extra + ' (Waffen gibt es nur beim Live-Event.)');
       }, { test: true });
       return;
     }
