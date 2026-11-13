@@ -3,7 +3,7 @@ import { ADMIN_NAME, ADMIN_PW_HASH, GIFT_NAMES, GIFT_FIRST_LOGIN } from './confi
 import { hashPw } from './logic.js';
 
 const KEYS = { users: 'ns_users', prog: 'ns_prog', shifts: 'ns_shifts', ws: 'ns_ws', bonus: 'ns_bonus', gift: 'ns_gift' };
-const PROGRESS_FIELDS = ['m', 'wl', 'fu', 'it', 'gate', 'own', 'wi', 'up', 'sk', 'ah', 'skin', 'tie', 'skins', 'rank', 'ranks', 'free', 'evDone', 'savedAt'];
+const PROGRESS_FIELDS = ['m', 'wl', 'fu', 'it', 'gate', 'own', 'wi', 'up', 'sk', 'ah', 'skin', 'tie', 'skins', 'rank', 'ranks', 'free', 'evDone', 'savedAt', 'set'];
 
 /** Einfacher Speicher im Arbeitsspeicher (für Tests oder wenn localStorage gesperrt ist). */
 export function memoryStorage() {

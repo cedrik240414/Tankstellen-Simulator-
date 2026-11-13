@@ -112,3 +112,21 @@ label{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
 .bossbar{display:inline-block;width:160px;height:12px;background:#311;border:1px solid #f44;vertical-align:middle}.bossbar i{display:block;height:100%;background:#f33}
 #hurt{position:absolute;inset:0;z-index:5;pointer-events:none;box-shadow:inset 0 0 120px 40px #f00}
 #hurt.show{display:block;animation:hurtfx .5s forwards}@keyframes hurtfx{from{opacity:1}to{opacity:0}}
+
+/* ================= Spielansicht passt immer in den Bildschirm ================= */
+#app:not(.hide){display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:none;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));overflow:hidden}
+#app>#hud{flex:none}
+#app>#fp:not(.hide){flex:1 1 auto;min-height:0;height:auto!important;max-height:none!important;aspect-ratio:auto!important;margin-top:4px}
+#app>#main{flex:none;max-height:45vh;overflow:auto}
+#app>#fp.hide~#main{flex:1 1 auto;max-height:none}
+#app>#log{flex:none;min-height:0;margin-top:2px;padding:2px 6px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud{padding:4px 8px;gap:4px 12px}
+#fb{bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+/* Tastatur-Modus: kein Joystick, kein Schießknopf, dafür Tastenhilfe */
+body.kbd #jb,body.kbd #fp:not(.shooting) #fb{display:none!important}
+#keyhelp{display:none;position:absolute;left:8px;bottom:8px;z-index:4;background:#000a;color:#ddd;font-size:13px;padding:4px 8px;border-radius:6px;pointer-events:none}
+body.kbd #fp:not(.cc):not(.cut) #keyhelp{display:block}
+.setrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
+.swatch{width:44px;height:44px;border-radius:50%;border:3px solid #3a4651;padding:0;margin:2px}
+.swatch.hl{border-color:#ffe060}
+.pubtag{font-size:12px;padding:2px 6px;border-radius:4px;background:#1a5a3a}.pubtag.priv{background:#5a1a1a}

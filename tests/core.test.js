@@ -165,6 +165,15 @@ describe('Verlosung', () => {
 });
 
 describe('Lobby', () => {
+  it('öffentliche Lobbys stehen in der Liste, private nicht', () => {
+    const a = login('Anna').token, b = login('Ben').token;
+    const pub = call('lobby_create', { world: 'winter', public: true }, a).body.code;
+    call('lobby_create', { world: 'tank', public: false }, b);
+    const list = call('lobby_list', {}, b).body.lobbies;
+    expect(list).toEqual([{ code: pub, host: 'Anna', world: 'winter', count: 1 }]);
+    expect(call('lobby_join', { code: pub }, b).body.ok).toBe(true);
+    expect(call('lobby_list', {}, a).body.lobbies[0].count).toBe(2);
+  });
   it('erstellen, beitreten, Positionen sehen, verlassen', () => {
     const a = login('Anna').token, b = login('Ben').token;
     const code = call('lobby_create', { world: 'tank' }, a).body.code;

@@ -57,6 +57,7 @@ async function doLogin() {
   const gift = G.store.takeGift(r.name), bonus = G.store.takeBonus(r.name);
   if (gift || bonus) { S.m += gift + bonus; G.save(); msg = (gift ? `🎁 Geschenk: +${gift}€ ` : '') + (bonus ? `Bonus: +${bonus}€` : ''); }
   tab = 'play';
+  applySettings();
   await poll(true);
   render();
 }
@@ -69,7 +70,7 @@ export function showMenu(m) {
   render();
   poll(true);
 }
-const TABS = [['play', '▶️ Spielen'], ['rang', '🏆 Rangliste'], ['skins', '👕 Skins'], ['shop', '🛒 Shop'], ['ranks', '🎖️ Ränge'], ['events', '🎉 Events'], ['lotto', '🎟️ Verlosung'], ['lobby', '👥 Lobby']];
+const TABS = [['play', '▶️ Spielen'], ['rang', '🏆 Rangliste'], ['skins', '👕 Skins'], ['shop', '🛒 Shop'], ['ranks', '🎖️ Ränge'], ['events', '🎉 Events'], ['lotto', '🎟️ Verlosung'], ['lobby', '👥 Lobby'], ['set', '⚙️ Einstellungen']];
 
 function render() {
   const m = $('#mcontent');
@@ -77,13 +78,31 @@ function render() {
   const role = S.role;
   $('#mhead').innerHTML = `<h2 class=mtitle>⛽ Tankstellen Simulator</h2><div class=who><b>${esc(displayName(S.name, S.rank, role))}</b> · 💶 ${S.m}€ · ${role === 'admin' ? 'Admin' : role === 'op' ? 'OP' : 'Spieler'} ${online ? '🌐' : '📴'}</div>` + eventBanner(false);
   $('#mtabs').innerHTML = TABS.concat(role === 'admin' ? [['admin', '🛡️ Admin']] : []).map(([k, n]) => `<button class="${tab === k ? 'hl' : ''}" data-m=tab data-v=${k}>${n}</button>`).join('') + '<button data-m=logout>🚪 Abmelden</button>';
-  const views = { play: playView, rang: rangView, skins: skinsView, shop: shopView, ranks: ranksView, events: eventsView, lotto: lottoView, lobby: lobbyView, admin: adminView };
+  const views = { set: setView, play: playView, rang: rangView, skins: skinsView, shop: shopView, ranks: ranksView, events: eventsView, lotto: lottoView, lobby: lobbyView, admin: adminView };
   m.innerHTML = (msg ? `<p class=lk>${esc(msg)}</p>` : '') + (views[tab] || playView)();
   $('#prev').style.display = ['skins', 'shop', 'play'].includes(tab) ? '' : 'none';
   setPreview(S.skin || 'standard');
   tickCountdowns();
 }
 
+const BLOOD = [['Rot', 0x7a0d0d], ['Hellrot', 0xd01818], ['Grün', 0x1a8a2a], ['Blau', 0x1a40c0], ['Lila', 0x7a20b0], ['Gelb', 0xd0b010], ['Schwarz', 0x111111], ['Weiß', 0xe8e8e8]];
+export function applySettings() {
+  const st = (S && S.set) || {};
+  const kbd = st.input ? st.input === 'keyboard' : !('ontouchstart' in window);
+  document.body.classList.toggle('kbd', kbd);
+}
+function setView() {
+  const st = S.set || {}, input = st.input || (('ontouchstart' in window) ? 'touch' : 'keyboard'), blood = st.blood ?? 0x7a0d0d;
+  return `<div class=card><h3>⚙️ Einstellungen</h3>
+    <h4>🎮 Steuerung</h4><div class=setrow>
+      <button class="${input === 'touch' ? 'hl' : ''}" data-m=setinput data-v=touch>👆 Touch (iPad)</button>
+      <button class="${input === 'keyboard' ? 'hl' : ''}" data-m=setinput data-v=keyboard>⌨️ Tastatur</button></div>
+    <p class=mu>${input === 'touch' ? 'Links wischen: laufen (Joystick) · rechts wischen: umschauen · roter Knopf: schießen.' : 'WASD: laufen · Pfeiltasten: umschauen · Leertaste: schießen · M: Monitor. Umschauen geht auch mit gedrückter Maus.'}</p>
+    <h4>🩸 Farbe des Blutes</h4><div class=setrow>`
+    + BLOOD.map(([n, c]) => `<button class="swatch ${blood === c ? 'hl' : ''}" style="background:${hex(c)}" title="${n}" aria-label="${n}" data-m=setblood data-v=${c}></button>`).join('')
+    + `<label>Eigene Farbe: <input type=color id=bloodcol value="${hex(blood)}" data-m=bloodcol></label></div>
+    <div class=setrow><span>Vorschau:</span><span style="display:inline-block;width:80px;height:30px;border-radius:50%;background:${hex(blood)}"></span></div></div>`;
+}
 function playView() {
   const total = G.store.shifts(S.name);
   return `<div class=card><h3>Welt wählen</h3><p class=mu>Geschaffte Schichten: ${total}</p><div class=btns>` + WORLDS.map(w => {
@@ -175,11 +194,21 @@ function lottoView() {
   if (S.role === 'admin') h += `<div class=card><h3>🛡️ Verlosung starten</h3><div class=btns><input id=lotamt type=number min=1 value=1000 placeholder="Gewinn €"><input id=lotmin type=number min=1 value=10 placeholder="Dauer in Minuten"></div><button class=red data-m=lotstart ${L ? 'disabled' : ''}>Starten</button>${L ? '<button data-m=lotstop>Abbrechen</button>' : ''}<p class=mu>Gewinn in €, Dauer in Minuten.</p></div>`;
   return h;
 }
+let pubLobbies = null;
+async function loadLobbies() { const r = await call('lobby_list'); pubLobbies = r.ok ? r.lobbies : []; if (tab === 'lobby' && !lobby) render(); }
 function lobbyView() {
   if (!online) return `<div class=card><h3>👥 Lobby</h3><p class=mu>Lobbys gehen nur, wenn der Server eingerichtet ist (Online-Modus).</p></div>`;
-  if (lobby) return `<div class=card><h3>👥 Lobby <span class=code>${lobby.code}</span></h3><p>Gib deinen Freunden den Code <b>${lobby.code}</b>. Welt: ${(WORLDS.find(w => w.id === lobby.world) || {}).label}</p><button class="big red" data-m=lobplay>▶ Zusammen spielen</button><button data-m=lobleave>Lobby verlassen</button></div>`;
-  return `<div class=card><h3>👥 Lobby erstellen</h3><div class=btns><select id=lobworld>${WORLDS.filter(w => L.worldUnlocked(w.id, G.store.shifts(S.name), S.adm)).map(w => `<option value=${w.id}>${w.label}</option>`).join('')}</select><button data-m=lobcreate>Erstellen</button></div></div>
-    <div class=card><h3>Lobby beitreten</h3><div class=btns><input id=lobcode placeholder="Code (4 Buchstaben)" maxlength=4 autocomplete=off><button data-m=lobjoin>Beitreten</button></div></div>`;
+  const wl = id => (WORLDS.find(w => w.id === id) || { label: id }).label;
+  if (lobby) return `<div class=card><h3>👥 Lobby <span class=code>${lobby.code}</span> <span class="pubtag ${lobby.public ? '' : 'priv'}">${lobby.public ? '🌍 Öffentlich' : '🔒 Privat'}</span></h3><p>${lobby.public ? 'Alle Spieler sehen deine Lobby in der Liste und können direkt beitreten.' : 'Gib deinen Freunden den Code <b>' + lobby.code + '</b>.'} Welt: ${wl(lobby.world)}</p><button class="big red" data-m=lobplay>▶ Zusammen spielen</button><button data-m=lobleave>Lobby verlassen</button></div>`;
+  if (pubLobbies === null) loadLobbies();
+  const list = pubLobbies || [];
+  return `<div class=card><h3>🌍 Öffentliche Lobbys</h3><button data-m=lobrefresh>🔄 Aktualisieren</button>`
+    + (list.length ? '<table class=lb><tr><th>Host</th><th>Welt</th><th>Spieler</th><th></th></tr>' + list.map(l => `<tr><td>${esc(l.host)}</td><td>${wl(l.world)}</td><td>👥 ${l.count}/8</td><td><button class=red data-m=lobjoinpub data-v=${l.code} ${l.count >= 8 ? 'disabled' : ''}>Beitreten</button></td></tr>`).join('') + '</table>' : `<p class=mu>${pubLobbies === null ? 'Lade …' : 'Gerade keine öffentliche Lobby. Erstell doch eine!'}</p>`)
+    + `</div><div class=card><h3>👥 Lobby erstellen</h3><div class=btns><select id=lobworld>${WORLDS.filter(w => L.worldUnlocked(w.id, G.store.shifts(S.name), S.adm)).map(w => `<option value=${w.id}>${w.label}</option>`).join('')}</select></div>
+    <div class=setrow><label><input type=radio name=lobvis value=public checked> 🌍 Öffentlich – jeder sieht sie und kann beitreten</label></div>
+    <div class=setrow><label><input type=radio name=lobvis value=private> 🔒 Privat – nur mit Code</label></div>
+    <button class=red data-m=lobcreate>Lobby erstellen</button></div>
+    <div class=card><h3>🔒 Private Lobby beitreten</h3><div class=btns><input id=lobcode placeholder="Code (4 Buchstaben)" maxlength=4 autocomplete=off><button data-m=lobjoin>Beitreten</button></div></div>`;
 }
 function adminView() {
   if (!admin) { loadAdmin(); return '<div class=card><p>Lade Spieler …</p></div>'; }
@@ -310,7 +339,7 @@ async function act(a, v, el) {
     case 'anfangen': $('#title').classList.add('hide'); showMenu(); return;
     case 'login': return doLogin();
     case 'logout': await sync(); kick(''); return;
-    case 'tab': tab = v; msg = ''; if (v === 'admin') admin = null; break;
+    case 'tab': tab = v; msg = ''; if (v === 'lobby') pubLobbies = null; if (v === 'admin') admin = null; break;
     case 'play': G.startGame(v, null); return;
     case 'wear': if (!S.skins.includes(v) && !skinAllowed(v, S.role)) return; if (SKIN[v].only && !skinAllowed(v, S.role)) return; S.skin = v; G.save(); sync(); break;
     case 'buyskin': {
@@ -344,7 +373,16 @@ async function act(a, v, el) {
     case 'lotjoin': { const r = await call('lottery_join'); msg = r.ok ? '✅ Du machst mit!' : r.error; await poll(true); break; }
     case 'lotstart': { const r = await call('admin_lottery_start', { amount: +$('#lotamt').value, minutes: +$('#lotmin').value }); msg = r.ok ? '✅ Verlosung gestartet.' : r.error; await poll(true); break; }
     case 'lotstop': await call('admin_lottery_stop'); await poll(true); break;
-    case 'lobcreate': { const w = $('#lobworld').value, r = await call('lobby_create', { world: w }); if (r.ok) lobby = { code: r.code, world: w }; else msg = r.error; break; }
+    case 'lobcreate': {
+      const w = $('#lobworld').value, pub = (document.querySelector('input[name=lobvis]:checked') || {}).value !== 'private';
+      const r = await call('lobby_create', { world: w, public: pub });
+      if (r.ok) lobby = { code: r.code, world: w, public: pub }; else msg = r.error;
+      break;
+    }
+    case 'lobrefresh': pubLobbies = null; break;
+    case 'lobjoinpub': { const r = await call('lobby_join', { code: v }); if (r.ok) lobby = { code: r.code, world: r.world, public: true }; else { msg = r.error; pubLobbies = null; } break; }
+    case 'setinput': S.set = { ...(S.set || {}), input: v }; applySettings(); G.save(); sync(); break;
+    case 'setblood': S.set = { ...(S.set || {}), blood: +v }; G.save(); sync(); break;
     case 'lobjoin': { const r = await call('lobby_join', { code: $('#lobcode').value }); if (r.ok) lobby = { code: r.code, world: r.world }; else msg = r.error; break; }
     case 'lobleave': if (lobby) await call('lobby_leave', { code: lobby.code }); lobby = null; break;
     case 'lobplay': if (lobby) G.startGame(lobby.world, lobby.code); return;
@@ -386,6 +424,7 @@ export function initMenu() {
   document.addEventListener('change', async e => {
     const t = e.target;
     if (t.dataset.m === 'adrole') { const r = await call('admin_act', { target: t.dataset.v, act: 'role', role: t.value }); msg = r.ok ? `✅ ${t.dataset.v} ist jetzt ${t.value}.` : r.error; admin = null; render(); }
+    if (t.dataset.m === 'bloodcol') { S.set = { ...(S.set || {}), blood: parseInt(t.value.slice(1), 16) }; G.save(); render(); sync(); }
     if (t.dataset.m === 'tie') { S.tie = parseInt(t.value.slice(1), 16); G.save(); setPreview(S.skin); sync(); }
   });
   document.addEventListener('input', e => {

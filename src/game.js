@@ -133,7 +133,7 @@ export function ib() {
   }
   if (n.includes('x')) h += '<button data-a=trash>🗑️ Müll durchsuchen</button>';
   if (n.includes('b')) h += `<button data-a=wipe>🧹 Blut wischen (${3 - S.wp}×)</button>`;
-  return h || '<p class=mu>Links wischen: laufen. Rechts wischen: umschauen. Geh zur Theke, zu den Regalen, zum Monitor oder zur Tür.</p>';
+  return h || (document.body.classList.contains('kbd') ? '<p class=mu>WASD: laufen. Pfeiltasten: umschauen. Geh zur Theke, zu den Regalen, zum Monitor oder zur Tür.</p>' : '<p class=mu>Links wischen: laufen. Rechts wischen: umschauen. Geh zur Theke, zu den Regalen, zum Monitor oder zur Tür.</p>');
 }
 const altarCtx = () => ({ skulls: S.sk || 0, heads: S.ah || 0, worldShifts: worldShifts(S.map), own: S.own });
 

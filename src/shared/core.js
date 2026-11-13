@@ -257,9 +257,20 @@ export function handle(db, mem, req, now = Date.now(), rand = Math.random) {
       mem.lobbies = mem.lobbies || {};
       let code;
       do code = Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[(rand() * 24) | 0]).join(''); while (mem.lobbies[code]);
-      mem.lobbies[code] = { host: u.name, world: String(b.world || 'tank'), players: {} };
+      mem.lobbies[code] = { host: u.name, world: String(b.world || 'tank'), players: {}, pub: !!b.public };
       mem.lobbies[code].players[u.name] = { t: now };
-      return ok({ code });
+      return ok({ code, public: !!b.public });
+    }
+    case 'lobby_list': {
+      const e = needUser(); if (e) return e;
+      const list = [];
+      for (const [code, L] of Object.entries(mem.lobbies || {})) {
+        for (const [n, q] of Object.entries(L.players)) if (now - q.t > LOBBY_TIMEOUT) delete L.players[n];
+        const count = Object.keys(L.players).length;
+        if (!count) { delete mem.lobbies[code]; continue; }
+        if (L.pub) list.push({ code, host: L.host, world: L.world, count });
+      }
+      return ok({ lobbies: list.sort((a, c) => c.count - a.count) });
     }
     case 'lobby_join': {
       const e = needUser(); if (e) return e;
