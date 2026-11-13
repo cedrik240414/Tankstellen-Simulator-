@@ -1,10 +1,10 @@
 // Schießabschnitte in den Live-Events: Ego-Sicht, der Spieler hält den Dark Point
 // und schießt lila Energiestrahlen auf Aliens, Schattenkreaturen, Energiekerne oder den Boss.
 import { skinModel } from './skins3d.js';
-import { V, K } from './state.js';
+import { V, K, S } from './state.js';
 
 /** Spielerposition vor der Tankstelle, Blick auf den Vorplatz (nach -x) */
-const POS = { x: -11, y: 1.6, z: 8.5 };
+const POS = { x: -16, y: 1.6, z: 10 };
 const START_YAW = Math.PI / 2;
 
 /**
@@ -21,13 +21,17 @@ export function createShooter(api, cfg, onDone) {
   let t = 0, kills = 0, hp = 8, spawnT = 0.5, hurtT = 0, lastShot = 0, ended = false, bossHp = cfg.n, deadMsg = false;
 
   // Dark Point in der Hand
-  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), bas(0xb050ff));
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 12), bas(0x7a20ff, 0.3));
-  orb.add(halo); orb.position.set(0.32, -0.26, -0.9); cam.add(orb);
-  const handLight = new THREE.PointLight(0xa040ff, 1.2, 6); orb.add(handLight);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), bas(0xb050ff));
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), bas(0x7a20ff, 0.3));
+  orb.add(halo);
+  // die eigene Spielfigur (mit Skin) hält den Dark Point in der rechten Hand hoch – Kamera hinter der Figur
+  const me = skinModel(THREE, (S && S.skin) || 'standard', { tieColor: S && S.tie });
+  root.add(me);
+  me.userData.ra.children[0].add(orb); orb.position.set(0, -0.42, 0.04);
+  const handLight = new THREE.PointLight(0xa040ff, 1.6, 8); orb.add(handLight);
 
   // Kulisse je nach Aufgabe
-  if (cfg.shoot === 'aliens') {
+  if (cfg.shoot === 'aliens' || cfg.shoot === 'swarm') {
     const ship = new THREE.Group();
     const body = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 12), lam(0x8a90a0, 0x101418)); body.scale.y = 0.25; ship.add(body);
     ship.add(new THREE.Mesh(new THREE.SphereGeometry(2.6, 20, 12), lam(0xaaf0ff, 0x2090a0)));
@@ -62,7 +66,7 @@ export function createShooter(api, cfg, onDone) {
     root.add(g); enemies.push(g);
   }
 
-  V.yaw = START_YAW; V.pit = cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
+  V.yaw = START_YAW; V.pit = cfg.shoot === 'swarm' ? 0.5 : cfg.shoot === 'boss' ? 0.25 : cfg.shoot === 'flyers' || cfg.shoot === 'cores' ? 0.2 : 0.02;
   ui.shooting(true);
   hud();
 
@@ -75,7 +79,14 @@ export function createShooter(api, cfg, onDone) {
   }
 
   function spawn() {
-    if (cfg.shoot === 'aliens') {
+    if (cfg.shoot === 'swarm') {
+      // fliegende grüne Aliens kommen aus dem Raumschiff herunter
+      const a = skinModel(THREE, 'alien');
+      a.scale.setScalar(0.85);
+      a.position.set(-24 + (Math.random() - 0.5) * 10, 10 + Math.random() * 4, 6 + (Math.random() - 0.5) * 16);
+      a.userData.kind = 'swarm'; a.userData.hp = 1; a.userData.sp = 2 + Math.random() * 1.2; a.userData.wob = Math.random() * 6; a.userData.hit = 0;
+      root.add(a); enemies.push(a);
+    } else if (cfg.shoot === 'aliens') {
       const a = skinModel(THREE, 'alien');
       a.position.set(-24 + (Math.random() - 0.5) * 2, 0, 6 + (Math.random() - 0.5) * 16);
       a.userData.kind = 'alien'; a.userData.hp = cfg.fast ? 2 : 1; a.userData.sp = (cfg.fast ? 1.8 : 1.2) + Math.random() * 0.6; a.userData.hit = 0;
@@ -112,7 +123,7 @@ export function createShooter(api, cfg, onDone) {
       let best = null, bestA = 0.09;
       for (const e of enemies) {
         const c = e.getWorldPosition(new THREE.Vector3());
-        if (e.userData.kind === 'alien') c.y += 1.1;
+        if (e.userData.kind === 'alien' || e.userData.kind === 'swarm') c.y += 1.0;
         const dir = c.clone().sub(rc.ray.origin), d = dir.length(), a = dir.normalize().angleTo(rc.ray.direction);
         if (a < bestA && d < 45) { bestA = a; best = { object: e.children[0] || e, point: c }; }
       }
@@ -132,9 +143,11 @@ export function createShooter(api, cfg, onDone) {
       }
     } else to = rc.ray.at(60, new THREE.Vector3());
     const len = from.distanceTo(to);
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, len, 6), bas(0xc070ff, 0.9));
-    beam.position.copy(from).lerp(to, 0.5); beam.lookAt(to); beam.rotateX(Math.PI / 2);
-    beam.userData.t = 0; root.add(beam); beams.push(beam);
+    for (const [r, c, o] of [[0.06, 0x05000a, 0.95], [0.18, 0xa040ff, 0.45]]) {
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 8), bas(c, o));
+      beam.position.copy(from).lerp(to, 0.5); beam.lookAt(to); beam.rotateX(Math.PI / 2);
+      beam.userData.t = 0; root.add(beam); beams.push(beam);
+    }
     halo.scale.setScalar(1.8);
     hud();
   }
@@ -164,22 +177,27 @@ export function createShooter(api, cfg, onDone) {
     V.pit = Math.max(-0.6, Math.min(1.1, V.pit - V.jy * dt * 1.6));
     V.yaw += ((K.arrowleft || K.a ? 1 : 0) - (K.arrowright || K.d ? 1 : 0)) * dt * 2.2;
     V.pit += ((K.arrowup || K.w ? 1 : 0) - (K.arrowdown || K.s ? 1 : 0)) * dt * 1.4;
-    cam.position.set(POS.x, POS.y, POS.z);
+    const sy = Math.sin(V.yaw), cy = Math.cos(V.yaw);
+    const back = 3.6 + Math.max(0, V.pit) * 1.4;
+    cam.position.set(POS.x + sy * back + cy * 1.1, Math.max(0.5, POS.y + 0.5 - Math.sin(V.pit) * 1.4), POS.z + cy * back - sy * 1.1);
     cam.rotation.set(V.pit, V.yaw, 0);
+    me.position.set(POS.x, 0, POS.z); me.rotation.y = V.yaw + Math.PI;
+    me.userData.ra.rotation.x = -(Math.PI / 2 + V.pit * 0.9);
     halo.scale.setScalar(Math.max(1, halo.scale.x - dt * 4));
 
     if (!ended) {
       if (t >= cfg.time) timeUp();
       spawnT -= dt;
-      const maxAlive = cfg.fast ? 14 : 10;
-      if (spawnT <= 0 && (cfg.shoot === 'aliens' || cfg.shoot === 'flyers') && enemies.length < maxAlive) {
-        spawn(); spawnT = (cfg.fast ? 0.7 : 1.1) + Math.random() * 0.7;
+      const maxAlive = cfg.shoot === 'swarm' ? 18 : cfg.fast ? 14 : 10;
+      if (spawnT <= 0 && ['aliens', 'flyers', 'swarm'].includes(cfg.shoot) && enemies.length < maxAlive) {
+        spawn(); spawnT = (cfg.shoot === 'swarm' ? 0.45 : cfg.fast ? 0.7 : 1.1) + Math.random() * 0.6;
       }
     }
     const ship = root.userData.ship; if (ship) ship.rotation.y += dt * 0.6;
     const portal = root.userData.portal; if (portal) portal.children[0].rotation.z += dt;
 
     hurtT -= dt;
+    const gone = [];
     for (const e of enemies) {
       const u = e.userData;
       if (u.kind === 'core') {
@@ -195,17 +213,19 @@ export function createShooter(api, cfg, onDone) {
         if (!ended && d <= 9.5 && hurtT <= 0) { hurt(); }
         continue;
       }
-      tmp.set(POS.x - e.position.x, (u.kind === 'flyer' ? POS.y : 0) - e.position.y, POS.z - e.position.z);
+      const fly = u.kind === 'flyer' || u.kind === 'swarm';
+      tmp.set(POS.x - e.position.x, (fly ? POS.y + (u.kind === 'swarm' ? 0.4 : 0) : 0) - e.position.y, POS.z - e.position.z);
       const dist = tmp.length();
       if (dist > 1.3 && !ended) {
         tmp.normalize().multiplyScalar(u.sp * dt);
         e.position.add(tmp);
-        if (u.kind === 'flyer') e.position.y += Math.sin(t * 4 + u.wob) * dt;
+        if (fly) { e.position.y += Math.sin(t * 4 + u.wob) * dt; e.position.x += Math.cos(t * 3 + u.wob) * dt * 0.8; }
         e.lookAt(POS.x, e.position.y, POS.z);
         if (e.userData.lg) { const a = Math.sin(t * 9 + u.sp) * 0.6; e.userData.lg.rotation.x = a; e.userData.rg.rotation.x = -a; e.userData.la.rotation.x = -a; e.userData.ra.rotation.x = a; }
-      } else if (!ended && hurtT <= 0) hurt();
+      } else if (!ended) { hurt(); gone.push(e); burst(e.position.clone().setY(1.2), 0x40ff60); }
       if (u.hit > 0) { u.hit -= dt; e.visible = Math.floor(u.hit * 40) % 2 === 0; } else e.visible = true;
     }
+    for (const e of gone) { root.remove(e); enemies.splice(enemies.indexOf(e), 1); }
     for (const b of beams) { b.userData.t += dt; b.material.opacity = Math.max(0, 0.9 - b.userData.t * 7); }
     for (const b of bursts) { b.userData.t += dt; b.scale.setScalar(1 + b.userData.t * 6); b.material.opacity = Math.max(0, 0.9 - b.userData.t * 3); }
     for (const list of [beams, bursts]) for (let i = list.length - 1; i >= 0; i--) if (list[i].material.opacity <= 0) { root.remove(list[i]); list.splice(i, 1); }
@@ -214,7 +234,7 @@ export function createShooter(api, cfg, onDone) {
 
   function hurt() {
     hurtT = 1.4;
-    if (hp <= 0) return;
+    if (hp <= 0 || ended) return;
     hp--;
     ui.hurt();
     if (hp <= 0 && !deadMsg) { deadMsg = true; hud(); setTimeout(timeUp, 1200); }
