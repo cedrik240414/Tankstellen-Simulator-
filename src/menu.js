@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import titleImg from './assets/title.jpg';
 import { S } from './state.js';
 import { call, setToken, online } from './net.js';
-import { SKINS, SKIN, RARITY, RANKS, RANK, displayName, shopSkins, shopEndsAt, freeLeft, monthKey, skinAllowed, skinPrice } from './content.js';
+import { GIFT_SKINS, SKINS, SKIN, RARITY, RANKS, RANK, displayName, shopSkins, shopEndsAt, freeLeft, monthKey, skinAllowed, skinPrice } from './content.js';
 import { skinModel } from './skins3d.js';
 import { EVENT_TITLES, STORY, eventReward } from './events.js';
 import { EVENT_JOIN_MS, EVENT_LIVE_MS } from './shared/core.js';
@@ -56,6 +56,10 @@ async function doLogin() {
   if (ld.ok && ld.data && (ld.data.savedAt || 0) > G.store.localSavedAt(r.name)) { G.store.importAll(r.name, ld.data); G.reload(); }
   const gift = G.store.takeGift(r.name), bonus = G.store.takeBonus(r.name);
   if (gift || bonus) { S.m += gift + bonus; G.save(); msg = (gift ? `🎁 Geschenk: +${gift}€ ` : '') + (bonus ? `Bonus: +${bonus}€` : ''); }
+  // Geschenk-Skins für bestimmte Spieler (z. B. Rudy: Sturmtruppler)
+  for (const id of GIFT_SKINS[r.name.toLowerCase()] || []) {
+    if (!S.skins.includes(id)) { S.skins.push(id); S.skin = id; G.save(); msg = `🎁 Du hast den Skin ${SKIN[id].name} geschenkt bekommen!`; }
+  }
   tab = 'play';
   applySettings();
   await poll(true);

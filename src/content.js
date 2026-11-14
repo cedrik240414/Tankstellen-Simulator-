@@ -25,6 +25,7 @@ export const SKINS = [
   s('kuerbis', 'Kürbiskopf', 'epic', '🎃', { head: 'pumpkin', shirt: 0x2a1a30, pants: 0x1a1020, cape: 0x3a1050 }),
   s('winter', 'Winter', 'rare', '❄️', { shirt: 0x2e6ad6, pants: 0x223355, hat: 'beanie', hatColor: 0xd03030, scarf: 0xf4f4f4 }),
   s('maskiert', 'Schwarz Maskiert', 'legendary', '🥷', { head: 'mask', shirt: C.black, pants: C.black, shoes: C.black, cape: 0x111111, glow: 0xa040ff }),
+  s('sturm', 'Sturmtruppler', 'epic', '⚪', { head: 'helmet', hatColor: 0xf6f6f6, visor: 0x0a0a0a, skin: 0xf0f0f0, shirt: 0xeeeeee, pants: 0xf0f0f0, shoes: 0x111111, armor: 0xfafafa, belt: 0x1a1a1a, vest: 0x2a2a2a }),
   s('soldat', 'Soldat', 'rare', '🪖', { shirt: 0x4a5a32, pants: 0x3f4a2a, shoes: 0x2a2018, hat: 'helmet', hatColor: 0x3f4a2a, vest: 0x5a6a3a }),
   s('alien', 'Alien', 'rare', '👽', { head: 'alien', skin: 0x5adf6a, shirt: 0x2a6a3a, pants: 0x1f4a2a, glow: 0x7aff8a, armor: 0x2a8a4a }),
   s('backrooms', 'Backrooms-Mitarbeiter', 'uncommon', '🟨', { shirt: 0xe0c838, pants: 0xe0c838, shoes: 0x222222, head: 'helmet', visor: 0x222222, hatColor: 0xe8d850 }),
@@ -95,6 +96,9 @@ export const SKINS = [
 ];
 export const SKIN = Object.fromEntries(SKINS.map(x => [x.id, x]));
 export const skinPrice = id => RARITY[SKIN[id].rarity].price;
+
+/** Skins, die bestimmte Spieler beim Login direkt geschenkt bekommen (Name klein geschrieben) */
+export const GIFT_SKINS = { rudy: ['sturm'] };
 
 /** Darf diese Rolle den Skin haben? */
 export function skinAllowed(id, role) {

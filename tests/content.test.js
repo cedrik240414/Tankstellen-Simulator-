@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SKINS, SKIN, RARITY, shopSkins, shopEndsAt, freeLeft, monthKey, skinAllowed, skinPrice, displayName, RANKS, SHOP_SIZE } from '../src/content.js';
+import { GIFT_SKINS, SKINS, SKIN, RARITY, shopSkins, shopEndsAt, freeLeft, monthKey, skinAllowed, skinPrice, displayName, RANKS, SHOP_SIZE } from '../src/content.js';
 import { STORY, eventReward, EVENT_TITLES, EV_WEAPON } from '../src/events.js';
 import { upgradeCost, weaponLevelCost, WEAPONS } from '../src/config.js';
 
@@ -24,6 +24,10 @@ describe('Skins', () => {
     expect(skinAllowed('hacker', 'op')).toBe(true);
     expect(skinAllowed('hacker', 'player')).toBe(false);
     expect(skinAllowed('frosch', 'player')).toBe(true);
+  });
+  it('Sturmtruppler gibt es, Rudy bekommt ihn geschenkt', () => {
+    expect(SKIN.sturm.name).toBe('Sturmtruppler');
+    expect(GIFT_SKINS.rudy).toContain('sturm');
   });
   it('Anzug hat eine einstellbare Krawatte', () => expect(SKIN.anzug.look.tie).toBe(true));
   it('Preis kommt aus der Seltenheit', () => expect(skinPrice('frosch')).toBe(RARITY.uncommon.price));
